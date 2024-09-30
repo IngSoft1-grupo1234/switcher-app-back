@@ -1,5 +1,5 @@
-from app.models.match_models import Match as MatchModel
 from app.models.player_models import Player as PlayerModel
+from app.models.match_models import Match as MatchModel
 from app.database import session
 from sqlalchemy.exc import IntegrityError
 
@@ -17,6 +17,13 @@ class PlayerRepository:
         finally:
             db.close()
 
+    def get_player(self, player_id) -> PlayerModel:
+        db = session()
+        try:
+            player = db.query(PlayerModel).get(player_id)
+            return player
+        finally:
+            db.close()
     
     def assign_match_to_player(self, player_id, match_id):
         try:
@@ -28,13 +35,15 @@ class PlayerRepository:
                 if match:
                     if player.match_id != match.match_id:
                         player.match_id = match.match_id
+                        if match.player_count is None:
+                            match.player_count = 0
                         match.players.append(player)
                         match.player_count += 1
                         db.commit()
                 else:
-                    return "match not found"
-            else:
-                return "player not found"
+                    return "Match not found"
+            else: return "Player not found"
+               
         except IntegrityError:
             return "limit reached"
         finally:
@@ -60,9 +69,9 @@ class PlayerRepository:
                         match.player_count -= 1
                         db.commit()
                 else:
-                    return "match not found"
+                    return "Player not belong to any match"
             else:
-                return "player not found"
+                return "Player not found"
         finally:
             db.close()
     
@@ -71,7 +80,8 @@ class PlayerRepository:
             db = session()
             player = db.query(PlayerModel).get(player_id)
             if player:
-                player.match.player_count -= 1
+                if player.match:
+                    player.match.player_count -= 1
                 db.delete(player)
                 db.commit()
             return player

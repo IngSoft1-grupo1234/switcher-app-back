@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy import CheckConstraint
 from app.database import Base
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base
 
 class Match(Base):
     __tablename__ = "matches"

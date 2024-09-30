@@ -1,4 +1,5 @@
-from models.match_models import Match as MatchModel
+from app.models.match_models import Match as MatchModel
+from app.models.player_models import Player as PlayerModel
 from app.database import session
 
 class MatchRepository:
