@@ -3,6 +3,7 @@ from app.routers.match_routers import router as MatchRouter
 from app.routers.player_routers import router as PlayerRouter
 from app.database import engine, Base
 from fastapi.middleware.cors import CORSMiddleware
+from app.websocket.websocket_endpoints import router as WebsocketRouter
 
 app = FastAPI()
 
@@ -29,6 +30,7 @@ Base.metadata.create_all(engine)
 
 app.include_router(MatchRouter)
 app.include_router(PlayerRouter)
+app.include_router(WebsocketRouter)
 
 @app.get("/")
 async def root():

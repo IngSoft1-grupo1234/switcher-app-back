@@ -142,3 +142,31 @@ class MatchRepository:
             return match
         finally:
             db.close()
+
+    def update_match(self, match_id, match_name=None, max_players=None, host=None):
+        db = session()
+        try:
+            match = db.query(MatchModel).get(match_id)
+            if match:
+                if match_name is not None:
+                    match.match_name = match_name
+                if max_players is not None:
+                    match.max_players = max_players
+                if host is not None:
+                    match.host = host
+                db.commit()
+                db.refresh(match)
+                return match
+        finally:
+            db.close()
+    
+    def get_player_ids_in_match(self, match_id):
+        db = session()
+        try:
+            match = db.query(MatchModel).get(match_id)
+            if match:
+                player_ids = [player.player_id for player in match.players]
+                return player_ids
+        finally:
+            db.close()
+    

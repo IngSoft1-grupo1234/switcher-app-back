@@ -2,6 +2,8 @@ from fastapi import APIRouter, status, HTTPException
 from typing import Dict, Any
 from app.crud.match_crud import MatchRepository
 from app.schemas.match_schemas import MatchIn, MatchOut
+from app.websocket.websocket_endpoints import player_manager
+
 router = APIRouter(tags=["matches"])
 
 # crea una partida ✓
@@ -9,7 +11,11 @@ router = APIRouter(tags=["matches"])
 async def create_match(new_match: MatchIn):
     repo = MatchRepository()
     db_match = repo.create_match(match_name=new_match.match_name, max_players=new_match.max_players, host=new_match.host)
-        
+    player_manager.broadcast_json({
+                                    "action": "games-update", 
+                                    "data": {
+                                                "match_id" : db_match.match_id
+                                            }})
     return MatchOut(match_name=new_match.match_name, 
                     max_players=new_match.max_players, 
                     host=new_match.host,
