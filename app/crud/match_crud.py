@@ -84,7 +84,7 @@ class MatchRepository:
                     "has_begun": match.has_begun,
                     "players": [
                     {
-                    "player_id": player.player_id,
+                        "player_id": player.player_id,
                         "username": player.username,
                     }
                     for player in match.players
@@ -164,7 +164,9 @@ class MatchRepository:
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            elif match:
                 player_ids = [player.player_id for player in match.players]
                 return player_ids
         finally:

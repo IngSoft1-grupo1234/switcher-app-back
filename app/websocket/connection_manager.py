@@ -25,10 +25,3 @@ class ConnectionManager:
             await connection.send_json(data)
 
 
-
-# async def handle_message(player_id: int, message: dict, manager: ConneectionManager):
-#     action = message.get("action")
-#     if action == "send-user-id":
-#         await manager.broadcast(f"Player {data['username']} with Id {data['userId']} connected")
-#     else:
-#         await manager.send_personal_message(f"Unknown action: {action}", player_id)

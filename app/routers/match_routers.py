@@ -11,11 +11,7 @@ router = APIRouter(tags=["matches"])
 async def create_match(new_match: MatchIn):
     repo = MatchRepository()
     db_match = repo.create_match(match_name=new_match.match_name, max_players=new_match.max_players, host=new_match.host)
-    player_manager.broadcast_json({
-                                    "action": "games-update", 
-                                    "data": {
-                                                "match_id" : db_match.match_id
-                                            }})
+    await player_manager.broadcast_json({"action": "games-update", "data": {"match_id" : db_match.match_id}})
     return MatchOut(match_name=new_match.match_name, 
                     max_players=new_match.max_players, 
                     host=new_match.host,

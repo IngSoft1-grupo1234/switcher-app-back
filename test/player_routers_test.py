@@ -4,6 +4,8 @@ from unittest.mock import patch, MagicMock
 from app.routers.player_routers import router
 from app.schemas.player_schemas import PlayerIn, PlayerOut
 from app.crud.player_crud import PlayerRepository
+from app.crud.match_crud import MatchRepository
+from app.models.player_models import Player as PlayerModel
 from fastapi import HTTPException
 
 client = TestClient(router)
@@ -41,10 +43,15 @@ def test_get_player(player_data):
 #         assert response.status_code == 404
 #         assert response.json() == {"detail": "Player not found."}
         
+
 def test_assign_match_to_player():
+    mock_player = PlayerModel(player_id=1, username="test_player1")
     with patch.object(PlayerRepository, 'assign_match_to_player', return_value="success"):
-        response = client.put("/players/1/AssignToMatch/1")
-        assert response.status_code == 204
+        with patch.object(PlayerRepository, 'get_player', return_value=mock_player):
+            with patch.object(MatchRepository, 'get_player_ids_in_match', return_value=[1, 2, 3]):
+                response = client.put("/players/1/AssignToMatch/1")
+                assert response.status_code == 204
+
 
 # def test_assign_match_to_player_match_not_found():
 #     with patch.object(PlayerRepository, 'assign_match_to_player', return_value="match not found"):

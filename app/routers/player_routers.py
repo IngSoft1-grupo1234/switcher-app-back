@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, HTTPException
 from app.crud.player_crud import PlayerRepository
+from app.crud.match_crud import MatchRepository
 from app.schemas.player_schemas import PlayerIn, PlayerOut
 from app.websocket.websocket_endpoints import player_manager
 
@@ -25,18 +26,21 @@ async def get_player(player_id: int) -> PlayerOut:
 @router.put("/players/{player_idd}/AssignToMatch/{match_idd}", status_code=status.HTTP_204_NO_CONTENT)
 async def assign_match_to_player(player_idd: int, match_idd: int):
     repo = PlayerRepository()
+    repom = MatchRepository()
     
     #abominacion
     status_string = repo.assign_match_to_player(player_id=player_idd, match_id=match_idd)
     db_player = repo.get_player(player_id=player_idd)
-
+    players_in_match = repom.get_player_ids_in_match(match_id=match_idd)
+    
     if status_string == "match not found":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
     elif status_string == "player not found":
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found.")
     elif status_string == "limit reached":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Match is full")
-    players_in_match = repo.get_player_ids_in_match(match_id=match_idd)
+    elif players_in_match is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
     for p in players_in_match:
         await player_manager.send_json({
             "action": "join-game",
