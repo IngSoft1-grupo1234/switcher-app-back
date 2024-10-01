@@ -3,6 +3,7 @@ from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.schemas.player_schemas import PlayerIn, PlayerOut
 from app.websocket.websocket_endpoints import player_manager
+import json
 
 router = APIRouter(tags=["players"])
 
@@ -42,13 +43,7 @@ async def assign_match_to_player(player_idd: int, match_idd: int):
     elif players_in_match is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
     for p in players_in_match:
-        await player_manager.send_json({
-            "action": "join-game",
-            "data": {
-                "playername": db_player.username,
-                "match_id": match_idd
-            }
-        }, p)
+        await player_manager.send(json.dumps({"action": "join-game","data": {"playername": db_player.username,"match_id": match_idd}}), p)
     
 
 @router.put("/players/{player_id}/UnassignMatch", status_code=status.HTTP_204_NO_CONTENT)

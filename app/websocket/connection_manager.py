@@ -16,13 +16,13 @@ class ConnectionManager:
         if player_id in self.active_connections:
             del self.active_connections[player_id]
 
-    async def send_json(self, data: dict, player_id: int):
+    async def send(self, data: str, player_id: int):
         if player_id in self.active_connections:
-            await self.active_connections[player_id].send_json(data)
+            await self.active_connections[player_id].send_text(data)
         
-    async def broadcast_json(self, data: dict):
+    async def broadcast(self, data: str):
         for connection in self.active_connections.values():
-            await connection.send_json(data)
+            await connection.send_text(data)
 
 
 

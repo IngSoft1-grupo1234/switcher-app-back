@@ -3,6 +3,8 @@ from typing import Dict, Any
 from app.crud.match_crud import MatchRepository
 from app.schemas.match_schemas import MatchIn, MatchOut
 from app.websocket.websocket_endpoints import player_manager
+import json
+
 
 router = APIRouter(tags=["matches"])
 
@@ -11,7 +13,8 @@ router = APIRouter(tags=["matches"])
 async def create_match(new_match: MatchIn):
     repo = MatchRepository()
     db_match = repo.create_match(match_name=new_match.match_name, max_players=new_match.max_players, host=new_match.host)
-    await player_manager.broadcast_json({"action": "games-update", "data": {"match_id" : db_match.match_id}})
+    message = {"action": "create-game","data": {"match_id": db_match.match_id}}
+    await player_manager.broadcast(json.dumps(message))
     return MatchOut(match_name=new_match.match_name, 
                     max_players=new_match.max_players, 
                     host=new_match.host,
