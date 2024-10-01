@@ -39,7 +39,7 @@ async def get_all_matches()-> Dict[str, Any]:
     
 
 # get todos los "lobbies" o partidas no iniciadas ✓
-@router.get("/matches/notbegun", status_code=status.HTTP_200_OK, response_model=Dict[str, Any]) 
+@router.get("/matches/notbegun/", status_code=status.HTTP_200_OK, response_model=Dict[str, Any]) 
 async def get_notbegun_matches()-> Dict[str, Any]:
     repo = MatchRepository()
     return repo.get_notbegun_matches()
