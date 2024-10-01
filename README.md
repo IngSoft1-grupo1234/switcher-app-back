@@ -3,7 +3,7 @@
 ## Build complete App
 ### Docker Compose Setup
 
-This application its divided in two repositories independently (the backend side and -this repo- the frontend). We use docker-compose to connect  correctly both sides.
+This application its divided in two repositories independently (the frontend side and -this repo- the backend). We use docker-compose to connect  correctly both sides.
 
 ## Prerequisites
 
