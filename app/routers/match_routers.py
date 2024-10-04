@@ -58,18 +58,14 @@ async def delete_match(match_id: int):
 
 
 
-# set has_begun a True ✓
+# Empieza una partida inicializando los turnos, por ahora. ✓
 @router.put("/matches/{match_id}/start", status_code=status.HTTP_204_NO_CONTENT)
 async def start_match(match_id: int):
     repo = MatchRepository()
-    match_status = repo.start_match(match_id=match_id)
-    if match_status == "not enough players":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Not enough players.")
-    elif match_status == "started":
-        return # no pasa nada :)
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
-
+    information_to_send = repo.start_match(match_id=match_id)
+    message = {"action": "start-game","data": {"turns": information_to_send}}
+    # print(f"<> <> <> <> START MATCH MESSAGE: {json.dumps(message)}")
+    await player_manager.broadcast_to_id_list(json.dumps(message), information_to_send) # chanchada
 
 # set current_turn ✓
 @router.put("/matches/{match_id}/turn/{turn}", status_code=status.HTTP_204_NO_CONTENT)

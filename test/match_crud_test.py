@@ -95,7 +95,7 @@ def test_start_match(match_repo, mock_session):
 
     result = match_repo.start_match(1)
 
-    assert result == "started"
+    assert result == [1, 2] or result == [2, 1] # abominacion pero es viable con dos jugadores
     assert mock_match.has_begun is True
     mock_db.commit.assert_called_once()
 

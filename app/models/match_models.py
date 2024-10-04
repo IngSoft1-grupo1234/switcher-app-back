@@ -1,8 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Text
 from sqlalchemy import CheckConstraint
 from app.database import Base
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import declarative_base
 
 class Match(Base):
     __tablename__ = "matches"
@@ -14,6 +13,7 @@ class Match(Base):
     player_count = Column(Integer, default=0)
     current_turn = Column(Integer, default=1)
     has_begun = Column(Boolean, default=False)
+    turns = Column(Text, nullable=True)
 
     players = relationship("Player", back_populates="match")
 

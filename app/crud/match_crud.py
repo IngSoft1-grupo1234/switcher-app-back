@@ -1,6 +1,9 @@
+from fastapi import HTTPException
 from app.models.match_models import Match as MatchModel
 from app.models.player_models import Player as PlayerModel
 from app.database import session
+import random
+import json
 
 class MatchRepository:
     def create_match(self, match_name, max_players, host) -> MatchModel:
@@ -112,12 +115,22 @@ class MatchRepository:
         try:
             match = db.query(MatchModel).get(match_id)
             if match:
+                # Setea has_begun si es posible
                 if match.player_count < 2:
-                    return "not enough players"
+                    raise HTTPException(status_code=409, detail="Not enough players.")
+                elif match.player_count > match.max_players:
+                    raise HTTPException(status_code=409, detail="Match is full.")
                 else:
                     match.has_begun = True
-                    db.commit()
-                    return "started"
+                    
+                # Crea turnos para jugadores
+                shuffled_turns = [player.player_id for player in match.players]
+                random.shuffle(shuffled_turns)
+                match.turns = json.dumps(shuffled_turns)
+                db.commit()
+                return shuffled_turns
+            else:
+                raise HTTPException(status_code=404, detail="Match not found.")
         finally:
             db.close()
 
