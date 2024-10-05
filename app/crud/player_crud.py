@@ -2,7 +2,7 @@ from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from app.database import session
 from sqlalchemy.exc import IntegrityError
-
+from fastapi import HTTPException
 
 class PlayerRepository:
     def create_player(self, username) -> PlayerModel:
@@ -21,6 +21,8 @@ class PlayerRepository:
         db = session()
         try:
             player = db.query(PlayerModel).get(player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
             return player
         finally:
             db.close()
@@ -30,48 +32,47 @@ class PlayerRepository:
             db = session()
             player = db.get(PlayerModel, player_id)
             match = db.get(MatchModel, match_id)
-            # abominacion
-            if player:
-                if match:
-                    if player.match_id != match.match_id:
-                        player.match_id = match.match_id
-                        if match.player_count is None:
-                            match.player_count = 0
-                        match.players.append(player)
-                        match.player_count += 1
-                        db.commit()
-                else:
-                    return "Match not found"
-            else: return "Player not found"
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+
+            # Si el jugador no esta en la partida
+            if player.match_id != match.match_id:
+                player.match_id = match.match_id
+                match.players.append(player)
+                if match.player_count is None: # cosa rara para test, no entiendo.
+                    match.player_count = 0
+                match.player_count += 1
+                db.commit()
                
         except IntegrityError:
-            return "limit reached"
+            raise HTTPException(status_code=409, detail="Match is full.")
         finally:
             db.close()
     
     def unassign_match_to_player(self, player_id):
         try:
             db = session()
-            player = db.query(PlayerModel).get(player_id)
-            if player:
-                match = db.query(MatchModel).get(player.match_id)
-                if match:
-                    if match.has_begun: # desconectarse midgame, no pasa nada
-                        player.match_id = None
-                        match.player_count -= 1
-                        db.commit()
-                    elif match.host == player.player_id: # se desconecta el host en el lobby, se borra partida
-                        player.match_id = None
-                        db.delete(match)
-                        db.commit()
-                    else:
-                        player.match_id = None # se desconecta jugador en el lobby, no pasa nada
-                        match.player_count -= 1
-                        db.commit()
-                else:
-                    return "Player not belong to any match"
+            player = db.get(PlayerModel, player_id)
+            match = db.get(MatchModel, player.match_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            
+            if match.has_begun: # desconectarse midgame, no pasa nada
+                player.match_id = None
+                match.player_count -= 1
+                db.commit()
+            elif match.host == player.player_id: # se desconecta el host en el lobby, se borra partida
+                player.match_id = None
+                db.delete(match)
+                db.commit()
             else:
-                return "Player not found"
+                player.match_id = None # se desconecta jugador en el lobby, no pasa nada
+                match.player_count -= 1
+                db.commit()
         finally:
             db.close()
     

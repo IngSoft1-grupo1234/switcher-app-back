@@ -4,6 +4,8 @@ from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
+
 
 @pytest.fixture
 def player_repo():
@@ -61,24 +63,26 @@ def test_assign_match_to_player_match_not_found(mock_session, player_repo):
     mock_db.get.side_effect = [PlayerModel(player_id=1), None]
     mock_db.close = MagicMock()
 
-    result = player_repo.assign_match_to_player(1, 1)
+    with pytest.raises(HTTPException) as exc_info:
+        player_repo.assign_match_to_player(1, 1)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
     mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
-    assert result == "Match not found"
+    assert exc_info.value.detail == "Match not found."
 
 def test_assign_match_to_player_player_not_found(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_db.get.side_effect = [None, MatchModel(match_id=1)]
     mock_db.close = MagicMock()
 
-    result = player_repo.assign_match_to_player(1, 1)
+    with pytest.raises(HTTPException) as exc_info:
+        player_repo.assign_match_to_player(1, 1)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
     mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
-    assert result == "Player not found"
+    assert exc_info.value.detail == "Player not found."
 
 def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db = mock_session.return_value
@@ -86,12 +90,13 @@ def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db.commit.side_effect = IntegrityError("mock", "mock", "mock")
     mock_db.close = MagicMock()
 
-    result = player_repo.assign_match_to_player(1, 1)
+    with pytest.raises(HTTPException) as exc_info:
+        player_repo.assign_match_to_player(1, 1)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
     mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
-    assert result == "limit reached"
+    assert exc_info.value.detail == "Match is full."
 
 def test_unassign_match_to_player(mock_session,player_repo):
     mock_db = mock_session.return_value
@@ -101,7 +106,7 @@ def test_unassign_match_to_player(mock_session,player_repo):
 
     result = player_repo.unassign_match_to_player(1)
 
-    mock_db.query().get.assert_any_call(1)
+    mock_db.get.assert_any_call(PlayerModel, 1)
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
     assert result is None

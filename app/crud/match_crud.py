@@ -22,27 +22,7 @@ class MatchRepository:
         db = session()
         try:
             matches = db.query(MatchModel).all()
-            match_list = [
-                {
-                    "id": match.match_id,
-                    "match_name": match.match_name,
-                    "max_players": match.max_players,
-                    "host": match.host,
-                    "player_count": match.player_count,
-                    "current_turn": match.current_turn,
-                    "has_begun": match.has_begun,
-                    "players": [
-                    {
-                        "player_id": player.player_id,
-                        "username": player.username,
-                    }
-                    for player in match.players
-                    ],
-                    "turns" : match.turns,
-                    "board" : match.board
-                }
-                for match in matches
-            ]
+            match_list = [self.__match_to_dict(match) for match in matches]
             return {"matches": match_list}
         finally:
             db.close()
@@ -51,25 +31,7 @@ class MatchRepository:
         db = session()
         try:
             unstarted_matches = db.query(MatchModel).filter(MatchModel.has_begun == False).all()
-            match_list = [
-                {
-                    "id": match.match_id,
-                    "match_name": match.match_name,
-                    "max_players": match.max_players,
-                    "host": match.host,
-                    "player_count": match.player_count,
-                    "current_turn": match.current_turn,
-                    "has_begun": match.has_begun,
-                    "players": [
-                    {
-                        "player_id": player.player_id,
-                        "username": player.username,
-                    }
-                    for player in match.players
-                    ]
-                }
-                for match in unstarted_matches
-            ]
+            match_list = match_list = [self.__match_to_dict(match) for match in unstarted_matches]
             return {"matches": match_list}
         finally:
             db.close()
@@ -78,28 +40,31 @@ class MatchRepository:
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
-                match_dict = {
-                    "id": match.match_id,
-                    "match_name": match.match_name,
-                    "max_players": match.max_players,
-                    "host": match.host,
-                    "player_count": match.player_count,
-                    "current_turn": match.current_turn,
-                    "has_begun": match.has_begun,
-                    "players": [
-                    {
-                        "player_id": player.player_id,
-                        "username": player.username,
-                    }
-                    for player in match.players
-                    ],
-                    "turns" : match.turns,
-                    "board" : match.board
-                }
-                return match_dict
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            return self.__match_to_dict(match)
         finally:
             db.close()
+
+    def __match_to_dict(self, match) -> dict:
+        return {
+            "id": match.match_id,
+            "match_name": match.match_name,
+            "max_players": match.max_players,
+            "host": match.host,
+            "player_count": match.player_count,
+            "current_turn": match.current_turn,
+            "has_begun": match.has_begun,
+            "players": [
+                {
+                    "player_id": player.player_id,
+                    "username": player.username,
+                }
+                for player in match.players
+            ],
+            "turns": match.turns,
+            "board": match.board
+        }
 
     def delete_match(self, match_id):
         db = session()

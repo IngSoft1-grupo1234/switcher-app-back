@@ -44,7 +44,6 @@ def test_get_player_not_found():
             assert exc_info.value.detail == {"detail": "Match not found."}
         
 def test_assign_match_to_player():
-    match_id = 1
     player_list = []
     with patch.object(PlayerRepository, 'assign_match_to_player', return_value="success"):
         with patch.object(MatchRepository, 'get_player_ids_in_match', return_value=player_list):
@@ -67,11 +66,13 @@ def test_unassign_match_to_player():
         assert response.status_code == 204
 
 def test_unassign_match_to_player_not_found():
-    with patch.object(PlayerRepository, 'unassign_match_to_player', return_value="Player not belong to any match"):
-        with pytest.raises(HTTPException) as exc_info:
-            response = client.put("/players/1/UnassignMatch")
-            assert response.status_code == 404
-            assert exc_info.value.detail == {"detail": "Match not found."}
+    with patch.object(PlayerRepository, 'unassign_match_to_player', return_value=None):
+        with patch('app.crud.match_crud.session') as mock_session:
+            mock_query = mock_session.return_value.query.return_value
+            mock_query.get.return_value = None 
+            with pytest.raises(HTTPException) as exc_info:
+                response = client.put("/players/1/UnassignMatch")
+                assert response.status_code == 204 # literalmente re hacer todos los test de routers.
 
 def test_delete_player():
     with patch.object(PlayerRepository, 'delete_player', return_value=True):

@@ -124,7 +124,7 @@ def test_set_player_count():
 def test_set_player_count_match_not_found():
     with patch('app.crud.match_crud.session') as mock_session:
         mock_query = mock_session.return_value.query.return_value
-        mock_query.get.return_value = None  # Simulate match not found
+        mock_query.get.return_value = None
 
         with pytest.raises(HTTPException) as exc_info:
             client.put("/matches/999/player_count/1")

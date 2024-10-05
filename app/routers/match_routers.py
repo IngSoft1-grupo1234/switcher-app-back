@@ -32,9 +32,6 @@ async def create_match(new_match: MatchIn):
 async def get_match(match_idd: int):
     repo = MatchRepository()
     match = repo.get_match(match_id=match_idd)
-    if not match:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
-
     return match
 
 
