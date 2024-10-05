@@ -96,9 +96,18 @@ def test_delete_match():
         response = client.delete(f"/matches/1")
         assert response.status_code == 204
     
+start_match_return_value = {
+    "turns" : [1, 2],
+    "board" : [["r", "r", "r", "r", "r", "r"],
+               ["r", "r", "r", "r", "r", "r"],
+               ["r", "r", "r", "r", "r", "r"],
+               ["r", "r", "r", "r", "r", "r"],
+               ["r", "r", "r", "r", "r", "r"],
+               ["r", "r", "r", "r", "r", "r"]]
+}
 def test_start_match():
     match_id = 1
-    with patch.object(MatchRepository, 'start_match', return_value="started"):
+    with patch.object(MatchRepository, 'start_match', return_value=start_match_return_value):
         response = client.put(f"/matches/{match_id}/start")
         assert response.status_code == 204
 

@@ -14,7 +14,7 @@ class Match(Base):
     current_turn = Column(Integer, default=1)
     has_begun = Column(Boolean, default=False)
     turns = Column(Text, nullable=True)
-
+    board = Column(Text, nullable=True)
     players = relationship("Player", back_populates="match")
 
     __table_args__ = (

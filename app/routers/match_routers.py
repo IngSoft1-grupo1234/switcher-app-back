@@ -65,9 +65,20 @@ async def delete_match(match_id: int):
 async def start_match(match_id: int):
     repo = MatchRepository()
     information_to_send = repo.start_match(match_id=match_id)
-    message = {"action": "start-game","data": {"turns": information_to_send}}
+
+    turns = information_to_send["turns"]
+    board = information_to_send["board"]
+
+    message = {
+                "action": "start-game",
+                "data": 
+                    {
+                        "turns": turns,
+                        "board": board
+                    }
+              }
     # print(f"<> <> <> <> START MATCH MESSAGE: {json.dumps(message)}")
-    await player_manager.broadcast_to_id_list(json.dumps(message), information_to_send) # chanchada
+    await player_manager.broadcast_to_id_list(json.dumps(message), turns)
 
 # set current_turn ✓ 
 # Deberia ser cambiado a "advance turn" que avance al siguiente turno dentro de la lista de turnos /!\ /!\ /!\

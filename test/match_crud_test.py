@@ -92,10 +92,20 @@ def test_start_match(match_repo, mock_session):
         PlayerModel(player_id=2, username="Player2")
     ])
     mock_db.query.return_value.get.return_value = mock_match
+    
+    
 
     result = match_repo.start_match(1)
 
-    assert result == [1, 2] or result == [2, 1] # abominacion pero es viable con dos jugadores
+    turns = result["turns"]
+    assert turns == [1, 2] or turns == [2, 1] # abominacion pero es viable con dos jugadores
+
+    board = result["board"]
+    assert len(board) == 6
+    for row in board:
+        assert len(row) == 6
+
+
     assert mock_match.has_begun is True
     mock_db.commit.assert_called_once()
 

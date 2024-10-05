@@ -38,7 +38,8 @@ class MatchRepository:
                     }
                     for player in match.players
                     ],
-                    "turns" : match.turns
+                    "turns" : match.turns,
+                    "board" : match.board
                 }
                 for match in matches
             ]
@@ -93,7 +94,8 @@ class MatchRepository:
                     }
                     for player in match.players
                     ],
-                    "turns" : match.turns
+                    "turns" : match.turns,
+                    "board" : match.board
                 }
                 return match_dict
         finally:
@@ -127,8 +129,18 @@ class MatchRepository:
             match.turns = json.dumps(shuffled_turns)
             match.has_begun = True
 
+            # Crea tablero y randomiza colores
+            colors = ['r'] * 9 + ['b'] * 9 + ['y'] * 9 + ['g'] * 9
+            random.shuffle(colors)
+            board = [colors[i:i+6] for i in range(0, 36, 6)]
+            for row in board:
+                print(row)
+            match.board = json.dumps(board)
             db.commit()
-            return shuffled_turns # regresa lista normal para dumpearla despues
+            return {
+                "turns": shuffled_turns,
+                "board": board
+            }
         finally:
             db.close()
 
