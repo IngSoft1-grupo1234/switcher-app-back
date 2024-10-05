@@ -28,8 +28,8 @@ class PlayerRepository:
     def assign_match_to_player(self, player_id, match_id):
         try:
             db = session()
-            player = db.query(PlayerModel).get(player_id)
-            match = db.query(MatchModel).get(match_id)
+            player = db.get(PlayerModel, player_id)
+            match = db.get(MatchModel, match_id)
             # abominacion
             if player:
                 if match:

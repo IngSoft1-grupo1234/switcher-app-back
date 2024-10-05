@@ -42,50 +42,54 @@ def test_get_player(mock_session, player_repo):
     assert player.username == "test_user"
     assert player.player_id == 1
 
-def test_assign_match_to_player(mock_session,player_repo):
+def test_assign_match_to_player(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.side_effect = [PlayerModel(player_id=1), MatchModel(match_id=1, players=[], player_count=0)]
+    mock_db.get.side_effect = [PlayerModel(player_id=1), MatchModel(match_id=1, players=[], player_count=0)]
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
     result = player_repo.assign_match_to_player(1, 1)
 
-    mock_db.query().get.assert_any_call(1)
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
     assert result is None
 
-def test_assign_match_to_player_match_not_found(mock_session,player_repo):
+def test_assign_match_to_player_match_not_found(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.side_effect = [PlayerModel(player_id=1), None]
+    mock_db.get.side_effect = [PlayerModel(player_id=1), None]
     mock_db.close = MagicMock()
 
     result = player_repo.assign_match_to_player(1, 1)
 
-    mock_db.query().get.assert_any_call(1)
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
     assert result == "Match not found"
 
-def test_assign_match_to_player_player_not_found(mock_session,player_repo):
+def test_assign_match_to_player_player_not_found(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.side_effect = [None, MatchModel(match_id=1)]
+    mock_db.get.side_effect = [None, MatchModel(match_id=1)]
     mock_db.close = MagicMock()
 
     result = player_repo.assign_match_to_player(1, 1)
 
-    mock_db.query().get.assert_any_call(1)
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
     assert result == "Player not found"
 
-def test_assign_match_to_player_integrity_error(mock_session,player_repo):
+def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.side_effect = [PlayerModel(player_id=1), MatchModel(match_id=1)]
+    mock_db.get.side_effect = [PlayerModel(player_id=1), MatchModel(match_id=1)]
     mock_db.commit.side_effect = IntegrityError("mock", "mock", "mock")
     mock_db.close = MagicMock()
 
     result = player_repo.assign_match_to_player(1, 1)
 
-    mock_db.query().get.assert_any_call(1)
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    mock_db.get.assert_any_call(MatchModel, 1)
     mock_db.close.assert_called_once()
     assert result == "limit reached"
 

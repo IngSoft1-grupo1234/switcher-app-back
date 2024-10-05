@@ -4,25 +4,31 @@ from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
 from app.routers.match_routers import router
 from app.crud.match_crud import MatchRepository
+from app.crud.player_crud import PlayerRepository
 
 
 
 client = TestClient(router)
 
-""" def test_create_match():
-    expected_response = {
+def test_create_match():
+    mock_db_match = MagicMock()
+    mock_db_match.match_id = 1
+    
+    
+    with patch.object(MatchRepository, 'create_match', return_value=mock_db_match):
+        response = client.post("/matches/", json={"match_name": "test_match",
+                                                  "max_players": 4,
+                                                  "host": 1})
+        expected_response = {
         "match_name": "test_match",
         "max_players": 4,
         "host": 1,
         "match_id": 1,
         "operation_result": "Succesfully created!"
     }
-    with patch.object(MatchRepository, 'create_match', return_value=expected_response):
-        response = client.post("/matches/", json={"match_name": "test_match",
-                                                  "max_players": 4,
-                                                  "host": 1})
+        
         assert response.status_code == 201
-        assert response.json() == expected_response """
+        assert response.json() == expected_response
 
 def test_get_match():
     expected_response = {
@@ -97,30 +103,45 @@ def test_start_match():
         assert response.status_code == 204
 
 def test_set_match_turn():
-    with patch.object(MatchRepository, 'set_match_turn', return_value="success"):
+    with patch.object(MatchRepository, 'set_match_turn', return_value=None):
         response = client.put(f"/matches/1/turn/1")
         assert response.status_code == 204
 
 def test_set_player_count():
-    with patch.object(MatchRepository, 'set_player_count', return_value="success"):
-        response = client.put(f"/matches/1/player_count/1")
+    with patch('app.crud.match_crud.MatchRepository.set_player_count', return_value=None):
+        response = client.put("/matches/1/player_count/1")
         assert response.status_code == 204
     
-def test_match_not_found():
-    match_id = 999
-    with patch.object(MatchRepository, 'delete_match', return_value=False): # delete match
+def test_set_player_count_match_not_found():
+    with patch('app.crud.match_crud.session') as mock_session:
+        mock_query = mock_session.return_value.query.return_value
+        mock_query.get.return_value = None  # Simulate match not found
+
         with pytest.raises(HTTPException) as exc_info:
-            response = client.delete(f"/matches/{match_id}")
-            assert response.status_code == 404
-            assert exc_info.value.detail == "Match not found."
-    with patch.object(MatchRepository, 'start_match', return_value=False): # start match
+            client.put("/matches/999/player_count/1")
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Match not found."
+
+
+def test_delete_match_not_found():
+    with patch('app.crud.match_crud.session') as mock_session:
+        mock_query = mock_session.return_value.query.return_value
+        mock_query.get.return_value = None 
+
         with pytest.raises(HTTPException) as exc_info:
-            response = client.put(f"/matches/{match_id}/start")
-            assert response.status_code == 404
-            assert exc_info.value.detail == "Match not found."
-    with patch.object(MatchRepository, 'set_player_count', return_value=False): # set player count
+            client.delete("/matches/999")
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Match not found."
+
+def test_start_match_not_found():
+    with patch('app.crud.match_crud.session') as mock_session:
+        mock_query = mock_session.return_value.query.return_value
+        mock_query.get.return_value = None  
+
         with pytest.raises(HTTPException) as exc_info:
-            response = client.put(f"/matches/1/player_count/1")
-            assert response.status_code == 404
-            assert exc_info.value.detail == "Match not found."
-    
+            client.put("/matches/999/start")
+
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.detail == "Match not found."

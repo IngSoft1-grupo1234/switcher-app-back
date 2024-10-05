@@ -37,7 +37,8 @@ class MatchRepository:
                         "username": player.username,
                     }
                     for player in match.players
-                    ]
+                    ],
+                    "turns" : match.turns
                 }
                 for match in matches
             ]
@@ -91,7 +92,8 @@ class MatchRepository:
                         "username": player.username,
                     }
                     for player in match.players
-                    ]
+                    ],
+                    "turns" : match.turns
                 }
                 return match_dict
         finally:
@@ -101,12 +103,13 @@ class MatchRepository:
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
-                for player in match.players:
-                    player.match_id = None 
-                db.delete(match)
-                db.commit()
-            return match
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            for player in match.players:
+                player.match_id = None 
+            db.delete(match)
+            db.commit()
+
         finally:
             db.close()
 
@@ -114,34 +117,42 @@ class MatchRepository:
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
-                # Setea has_begun si es posible
-                if match.player_count < 2:
-                    raise HTTPException(status_code=409, detail="Not enough players.")
-                elif match.player_count > match.max_players:
-                    raise HTTPException(status_code=409, detail="Match is full.")
-                else:
-                    match.has_begun = True
-                    
-                # Crea turnos para jugadores
-                shuffled_turns = [player.player_id for player in match.players]
-                random.shuffle(shuffled_turns)
-                match.turns = json.dumps(shuffled_turns)
-                db.commit()
-                return shuffled_turns
-            else:
+            if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
+            
+            self.__validate_match_start(match)
+                
+            # Crea turnos para jugadores
+            shuffled_turns = self.__shuffle_turns(match.players)
+            match.turns = json.dumps(shuffled_turns)
+            match.has_begun = True
+
+            db.commit()
+            return shuffled_turns # regresa lista normal para dumpearla despues
         finally:
             db.close()
+
+    # Modularizacion start_match, es privada
+    def __validate_match_start(self, match):
+        if match.player_count < 2:
+            raise HTTPException(status_code=409, detail="Not enough players.")
+        if match.player_count > match.max_players:
+            raise HTTPException(status_code=409, detail="Match is full.")
+
+    # Modularizacion start_match, es privada
+    def __shuffle_turns(self, players):
+        ids_list = [player.player_id for player in players]
+        random.shuffle(ids_list)
+        return ids_list
 
     def set_match_turn(self, match_id, turn):
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
-                match.current_turn = turn
-                db.commit()
-                return match
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            match.current_turn = turn
+            db.commit()
         finally:
             db.close()
     
@@ -149,10 +160,10 @@ class MatchRepository:
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
-            if match:
-                match.player_count = player_count
-                db.commit()
-            return match
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            match.player_count = player_count
+            db.commit()
         finally:
             db.close()
 

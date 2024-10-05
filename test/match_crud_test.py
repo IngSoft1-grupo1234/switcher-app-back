@@ -81,7 +81,7 @@ def test_delete_match(match_repo, mock_session):
 
     result = match_repo.delete_match(1)
 
-    assert result == mock_match
+    assert result == None
     mock_db.delete.assert_called_once_with(mock_match)
     mock_db.commit.assert_called_once()
 
@@ -109,7 +109,7 @@ def test_set_match_turn(match_repo, mock_session):
 
     result = match_repo.set_match_turn(1, 2)
 
-    assert result == mock_match
+    assert result == None
     assert mock_match.current_turn == 2
     mock_db.commit.assert_called_once()
 
@@ -123,6 +123,6 @@ def test_set_player_count(match_repo, mock_session):
 
     result = match_repo.set_player_count(1, 3)
 
-    assert result == mock_match
+    assert result == None
     assert mock_match.player_count == 3
     mock_db.commit.assert_called_once()
