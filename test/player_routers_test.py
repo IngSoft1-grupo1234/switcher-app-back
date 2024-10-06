@@ -5,9 +5,15 @@ from fastapi import HTTPException
 from app.routers.player_routers import router
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
+from app.models.player_models import Player as PlayerModel
 
 
 client = TestClient(router)
+
+@pytest.fixture
+def mock_session():
+    with patch('app.database.session', autospec=True) as mock_session:
+        yield mock_session
 
 @pytest.fixture
 def player_data():
@@ -65,23 +71,26 @@ def test_unassign_match_to_player():
         response = client.put("/players/1/UnassignMatch")
         assert response.status_code == 204
 
-def test_unassign_match_to_player_not_found():
-    with patch.object(PlayerRepository, 'unassign_match_to_player', return_value=None):
-        with patch('app.crud.match_crud.session') as mock_session:
-            mock_query = mock_session.return_value.query.return_value
-            mock_query.get.return_value = None 
-            with pytest.raises(HTTPException) as exc_info:
-                response = client.put("/players/1/UnassignMatch")
-                assert response.status_code == 204 # literalmente re hacer todos los test de routers.
+def test_unassign_match_to_player_not_found(mock_session):
+    mock_db = mock_session.return_value
+    mock_db.get.side_effect = [PlayerModel(player_id=1, match_id=1), None]
+    mock_db.close = MagicMock()
+    with patch('app.crud.match_crud.MatchRepository.get_match', return_value=None):
+        with pytest.raises(HTTPException) as exc_info:
+            response = client.put("/players/1/UnassignMatch")
+            assert response.status_code == 404 
 
 def test_delete_player():
     with patch.object(PlayerRepository, 'delete_player', return_value=True):
         response = client.delete("/players/1")
         assert response.status_code == 204
 
-def test_delete_player_not_found():
-    with patch.object(PlayerRepository, 'delete_player', return_value=False):
+def test_delete_player_not_found(mock_session):
+    mock_db = mock_session.return_value
+    mock_db.get.side_effect = [None]
+    mock_db.close = MagicMock()
+    
+    with patch('app.crud.player_crud.PlayerRepository.get_player', return_value=None):
         with pytest.raises(HTTPException) as exc_info:
             response = client.delete("/players/999")
             assert response.status_code == 404
-            assert exc_info.value.detail == {"detail": "Player not found."}

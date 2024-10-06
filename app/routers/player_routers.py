@@ -48,6 +48,4 @@ async def unassign_match_to_player(player_id: int):
 @router.delete("/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_player(player_id: int):
     repo = PlayerRepository()
-    player = repo.delete_player(player_id=player_id)
-    if not player: # mover esta excepcion a crud, y por consecuencia cambiar test :(
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found.")
+    repo.delete_player(player_id=player_id)

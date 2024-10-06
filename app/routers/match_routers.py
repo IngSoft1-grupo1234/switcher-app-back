@@ -31,7 +31,7 @@ async def create_match(new_match: MatchIn):
 @router.get("/matches/{match_idd}", status_code=status.HTTP_200_OK)
 async def get_match(match_idd: int):
     repo = MatchRepository()
-    match = repo.get_match(match_id=match_idd)
+    match = repo.get_match_dict(match_id=match_idd)
     return match
 
 

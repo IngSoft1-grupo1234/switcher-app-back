@@ -41,7 +41,7 @@ def test_get_match():
         "has_begun": False,
         "players": []
     }
-    with patch.object(MatchRepository, 'get_match', return_value=expected_response):
+    with patch.object(MatchRepository, 'get_match_dict', return_value=expected_response):
         response = client.get(f"/matches/1")
         assert response.status_code == 200
         assert response.json() == expected_response

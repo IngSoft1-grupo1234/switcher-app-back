@@ -67,7 +67,7 @@ def test_get_match(match_repo, mock_session):
         PlayerModel(player_id=2, username="Player2")
     ])
 
-    result = match_repo.get_match(1)
+    result = match_repo.get_match_dict(1)
 
     assert result["match_name"] == "Match1"
 

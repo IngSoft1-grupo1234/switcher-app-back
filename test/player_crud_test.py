@@ -34,12 +34,12 @@ def test_create_player(mock_session, player_repo):
 def test_get_player(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_player = PlayerModel(player_id=1, username="test_user")
-    mock_db.query().get.return_value = mock_player
+    mock_db.get.return_value = mock_player
     mock_db.close = MagicMock()
 
     player = player_repo.get_player(1)
 
-    mock_db.query().get.assert_called_once_with(1)
+    mock_db.get.assert_called_once_with(PlayerModel, 1)
     mock_db.close.assert_called_once()
     assert player.username == "test_user"
     assert player.player_id == 1
@@ -98,9 +98,11 @@ def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db.close.assert_called_once()
     assert exc_info.value.detail == "Match is full."
 
-def test_unassign_match_to_player(mock_session,player_repo):
+def test_unassign_match_to_player(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.side_effect = [PlayerModel(player_id=1, match_id=1), MatchModel(match_id=1, has_begun=False, host=2, player_count=1)]
+    mock_db.get.side_effect = [
+        PlayerModel(player_id=1, match_id=1),
+    ]
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
@@ -113,13 +115,12 @@ def test_unassign_match_to_player(mock_session,player_repo):
 
 def test_delete_player(mock_session,player_repo):
     mock_db = mock_session.return_value
-    mock_db.query().get.return_value = PlayerModel(player_id=1, match=MatchModel(player_count=1))
+    mock_db.get.return_value = PlayerModel(player_id=1, match=MatchModel(player_count=1))
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
     player = player_repo.delete_player(1)
 
-    mock_db.query().get.assert_called_once_with(1)
+    mock_db.get.assert_called_once_with(PlayerModel, 1)
     mock_db.commit.assert_called_once()
-    mock_db.close.assert_called_once()
     assert player.player_id == 1

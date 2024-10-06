@@ -36,7 +36,7 @@ class MatchRepository:
         finally:
             db.close()
     
-    def get_match(self, match_id):
+    def get_match_dict(self, match_id):
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
@@ -46,6 +46,16 @@ class MatchRepository:
         finally:
             db.close()
 
+    def get_match(self, match_id):
+        db = session()
+        try:
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            return match
+        finally:
+            db.close()
+            
     def __match_to_dict(self, match) -> dict:
         return {
             "id": match.match_id,

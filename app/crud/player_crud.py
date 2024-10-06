@@ -1,5 +1,6 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
+from app.crud.match_crud import MatchRepository
 from app.database import session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -20,7 +21,7 @@ class PlayerRepository:
     def get_player(self, player_id) -> PlayerModel:
         db = session()
         try:
-            player = db.query(PlayerModel).get(player_id)
+            player = db.get(PlayerModel, player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
             return player
@@ -55,9 +56,9 @@ class PlayerRepository:
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
-            match = db.get(MatchModel, player.match_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
+            match = MatchRepository().get_match(player.match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             
@@ -79,12 +80,13 @@ class PlayerRepository:
     def delete_player(self, player_id):
         try:
             db = session()
-            player = db.query(PlayerModel).get(player_id)
-            if player:
-                if player.match:
-                    player.match.player_count -= 1
-                db.delete(player)
-                db.commit()
+            player = self.get_player(player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            if player.match:
+                player.match.player_count -= 1
+            db.delete(player)
+            db.commit()
             return player
         finally:
             db.close()
