@@ -16,13 +16,8 @@ match_data = {
 }
 
 match_response = requests.post(f"{BASE_URL}/matches", json=match_data)
-try:
-    match_id = match_response.json()["match_id"]
-except ValueError:
-    print("Error: Response is not valid JSON")
-    print("Response status code:", match_response.status_code)
-    print("Response content:", match_response.content)
-    exit(1)
+match_id = match_response.json()["match_id"]
+
 
 
 
