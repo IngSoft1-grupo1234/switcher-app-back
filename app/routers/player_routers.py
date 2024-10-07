@@ -29,21 +29,22 @@ async def assign_match_to_player(player_idd: int, match_idd: int):
     
     # ya no es abominacion
     repo.assign_match_to_player(player_id=player_idd, match_id=match_idd)
-
+    
 
     db_player = repo.get_player(player_id=player_idd)
-    players_in_match = repom.get_player_ids_in_match(match_id=match_idd)
 
-    if players_in_match is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found.")
-    for p in players_in_match:
-        await player_manager.send(json.dumps({"action": "join-game","data": {"playername": db_player.username,"match_id": match_idd}}), p)
+    message = {"action": "player-joined-game","data": {"playername": db_player.username,"match_id": match_idd}}
+    await player_manager.broadcast(json.dumps(message))
     
 
 @router.put("/players/{player_id}/UnassignMatch", status_code=status.HTTP_204_NO_CONTENT)
 async def unassign_match_to_player(player_id: int):
     repo = PlayerRepository()
     repo.unassign_match_to_player(player_id=player_id)
+
+    db_player = repo.get_player(player_id=player_id)
+    message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id}}
+    await player_manager.broadcast(json.dumps(message))
 
 @router.delete("/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_player(player_id: int):
