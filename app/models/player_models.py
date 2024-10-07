@@ -12,3 +12,4 @@ class Player(Base):
     match_id = Column(Integer, ForeignKey('matches.match_id'), nullable=True)
 
     match = relationship("Match", back_populates="players")
+    cards = relationship("MoveCard", back_populates="player")

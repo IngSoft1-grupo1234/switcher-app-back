@@ -3,3 +3,4 @@ pydantic==2.8.0
 uvicorn==0.22.0
 sqlalchemy
 websockets
+pytest
