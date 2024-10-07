@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, HTTPException
 from typing import Dict, Any
 from app.crud.match_crud import MatchRepository
 from app.crud.player_crud import PlayerRepository
+from app.crud.movecard_crud import MoveCardRepository
 from app.schemas.match_schemas import MatchIn, MatchOut
 from app.websocket.websocket_endpoints import player_manager
 import json

@@ -11,5 +11,5 @@ class Player(Base):
     username = Column(String, nullable=False)
     match_id = Column(Integer, ForeignKey('matches.match_id'), nullable=True)
 
-    match = relationship("Match", back_populates="players")
-    cards = relationship("MoveCard", back_populates="player")
+    matches = relationship("Match", back_populates="players")
+    move_cards = relationship("MoveCard", back_populates="players")

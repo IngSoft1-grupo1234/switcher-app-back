@@ -1,7 +1,8 @@
 from fastapi import APIRouter, status, HTTPException
 from typing import List
-from app.schemas import MoveCard
-from app.crud import get_move_cards_by_player
+from app.schemas.movecard_schemas import MoveCard
+from app.crud.movecard_crud import MoveCardRepository
+from app.crud.player_crud import PlayerRepository
 
 router = APIRouter(tags=["move_cards"])
 

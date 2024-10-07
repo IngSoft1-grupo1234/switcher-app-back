@@ -1,5 +1,7 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
+from app.models.movecard_models import MoveCard as MoveCardModel
+from app.models.movecard_models import MoveCardType
 from app.database import session
 from sqlalchemy.exc import IntegrityError
 

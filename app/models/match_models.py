@@ -15,7 +15,7 @@ class Match(Base):
     has_begun = Column(Boolean, default=False)
     turns = Column(Text, nullable=True)
 
-    players = relationship("Player", back_populates="match")
+    players = relationship("Player", back_populates="matches")
 
     __table_args__ = (
         CheckConstraint('player_count <= max_players', name='check_player_count_limit'),  # player_count must not exceed max_players
