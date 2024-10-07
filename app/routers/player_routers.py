@@ -34,6 +34,7 @@ async def assign_match_to_player(player_idd: int, match_idd: int):
     db_player = repo.get_player(player_id=player_idd)
 
     message = {"action": "player-joined-game","data": {"playername": db_player.username,"match_id": match_idd}}
+    print(f"JOIN MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
     
 
@@ -44,6 +45,7 @@ async def unassign_match_to_player(player_id: int):
 
     db_player = repo.get_player(player_id=player_id)
     message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id}}
+    print(f"EXIT MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
 
 @router.delete("/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
