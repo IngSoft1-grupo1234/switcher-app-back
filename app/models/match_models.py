@@ -11,7 +11,7 @@ class Match(Base):
     max_players = Column(Integer, nullable=False)
     host = Column(Integer, nullable=False)
     player_count = Column(Integer, default=0)
-    current_turn = Column(Integer, default=1)
+    current_turn = Column(Integer, default=0)
     has_begun = Column(Boolean, default=False)
     turns = Column(Text, nullable=True)
 
