@@ -4,6 +4,9 @@ from app.models.player_models import Player as PlayerModel
 from app.models.movecard_models import MoveCard as MoveCardModel
 from app.models.movecard_models import MoveCardType
 from app.crud.movecard_crud import MoveCardRepository
+from app.crud.shapecard_crud import ShapeCardRepository
+from app.models.shapecard_models import ShapeCard as ShapeCardModel
+from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.database import session
 import random
 import json
@@ -119,6 +122,7 @@ class MatchRepository:
     def start_match(self, match_id):
         db = session()
         move_card_repo = MoveCardRepository()
+        shape_card_repo = ShapeCardRepository()
 
         try:
             match = db.query(MatchModel).get(match_id)
@@ -149,6 +153,64 @@ class MatchRepository:
 
                 for card in player_cards:
                     move_card_repo.assign_move_card_to_player(card, player)
+            
+            shape_card_types = ShapeCardType.__members__.values()
+
+            for shape_card_type in shape_card_types:
+                for _ in range(2):
+                    shape_card_repo.create_shape_card(shape_card_type=shape_card_type)
+
+            easy_shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
+                ShapeCardModel.player_id == None,
+                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.EASY
+            ).all()
+
+            hard_shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
+                ShapeCardModel.player_id == None,
+                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.HARD
+            ).all()
+
+            random.shuffle(easy_shape_cards)
+            random.shuffle(hard_shape_cards)
+
+            if len(match_players) == 2:
+                for player in match_players:
+                    easy_player_cards = easy_shape_cards[:8]
+                    easy_shape_cards = easy_shape_cards[8:]
+                    hard_player_cards = hard_shape_cards[:18]
+                    hard_shape_cards = hard_shape_cards[18:]
+
+                    for card in easy_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+                    
+                    for card in hard_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+
+            elif len(match_players) == 3:
+                for player in match_players:
+                    easy_player_cards = easy_shape_cards[:4]
+                    easy_shape_cards = easy_shape_cards[4:]
+                    hard_player_cards = hard_shape_cards[:12]
+                    hard_shape_cards = hard_shape_cards[12:]
+
+                    for card in easy_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+                    
+                    for card in hard_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+            else :
+                for player in match_players:
+                    easy_player_cards = easy_shape_cards[:4]
+                    easy_shape_cards = easy_shape_cards[4:]
+                    hard_player_cards = hard_shape_cards[:9]
+                    hard_shape_cards = hard_shape_cards[9:]
+
+                    for card in easy_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+                    
+                    for card in hard_player_cards:
+                        shape_card_repo.assign_shape_card_to_player(card, player)
+
 
             shuffled_turns = self.__shuffle_turns(match.players)
             match.turns = json.dumps(shuffled_turns)

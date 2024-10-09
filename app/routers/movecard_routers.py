@@ -3,6 +3,7 @@ from typing import List
 from app.schemas.movecard_schemas import MoveCardOut
 from app.crud.movecard_crud import MoveCardRepository
 from app.crud.player_crud import PlayerRepository
+from app.crud.shapecard_crud import ShapeCardRepository
 
 router = APIRouter(tags=["move_cards"])
 

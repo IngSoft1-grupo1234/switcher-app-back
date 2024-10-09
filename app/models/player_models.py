@@ -13,3 +13,4 @@ class Player(Base):
 
     matches = relationship("Match", back_populates="players")
     move_cards = relationship("MoveCard", back_populates="players")
+    shape_cards = relationship("ShapeCard", back_populates="players")
