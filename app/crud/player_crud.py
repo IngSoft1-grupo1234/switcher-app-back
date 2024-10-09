@@ -1,5 +1,9 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
+from app.models.movecard_models import MoveCard as MoveCardModel
+from app.models.movecard_models import MoveCardType
+from app.models.shapecard_models import ShapeCard as ShapeCardModel
+from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.crud.match_crud import MatchRepository
 from app.database import session
 from sqlalchemy.exc import IntegrityError

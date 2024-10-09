@@ -2,6 +2,8 @@ from fastapi import APIRouter, status, HTTPException
 from typing import Dict, Any
 from app.crud.match_crud import MatchRepository
 from app.crud.player_crud import PlayerRepository
+from app.crud.movecard_crud import MoveCardRepository
+from app.crud.shapecard_crud import ShapeCardRepository
 from app.schemas.match_schemas import MatchIn, MatchOut
 from app.websocket.websocket_endpoints import player_manager
 import json
@@ -54,7 +56,6 @@ async def get_notbegun_matches()-> Dict[str, Any]:
 async def delete_match(match_id: int):
     repo = MatchRepository()
     repo.delete_match(match_id=match_id)
-
 
 
 # Empieza una partida inicializando los turnos, por ahora. ✓
