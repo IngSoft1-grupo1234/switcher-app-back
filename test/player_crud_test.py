@@ -84,20 +84,20 @@ def test_assign_match_to_player_player_not_found(mock_session, player_repo):
     assert exc_info.value.detail == "Player not found."
 
 def test_assign_match_to_player_integrity_error(mock_session, player_repo):
-    match = MatchModel(player_count=4, players=[PlayerModel(player_id=1),
+    match = MatchModel(match_id=1, player_count=4, players=[PlayerModel(player_id=1),
                                                 PlayerModel(player_id=2), 
                                                 PlayerModel(player_id=3), 
                                                 PlayerModel(player_id=4)])
-    with patch.object(MatchRepository, 'get_match', return_value=match):
-        mock_db = mock_session.return_value
-        mock_db.commit.side_effect = IntegrityError("mock", "mock", "mock")
-        mock_db.close = MagicMock()
+    mock_db = mock_session.return_value
+    mock_db.get.side_effect = [PlayerModel(player_id=5), match]
+    mock_db.commit.side_effect = IntegrityError("mock", "mock", "mock")
+    mock_db.close = MagicMock()
 
-        with pytest.raises(HTTPException) as exc_info:
-            player_repo.assign_match_to_player(1, 1)
+    with pytest.raises(HTTPException) as exc_info:
+        player_repo.assign_match_to_player(1, 1)
 
-        mock_db.get.assert_any_call(PlayerModel, 1)
-        assert exc_info.value.detail == "Match is full."
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    assert exc_info.value.detail == "Match is full."
 
 def test_unassign_match_to_player(mock_session, player_repo):
     mock_db = mock_session.return_value
@@ -106,13 +106,14 @@ def test_unassign_match_to_player(mock_session, player_repo):
     ]
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
-
-    result = player_repo.unassign_match_to_player(1)
-
-    mock_db.get.assert_any_call(PlayerModel, 1)
-    mock_db.commit.assert_called_once()
-    mock_db.close.assert_called_once()
-    assert result is None
+    with patch('app.crud.match_crud.session') as match_thing:
+        match_thing.return_value.query.return_value.get.return_value = MatchModel(player_count=1)
+        result = player_repo.unassign_match_to_player(1)
+        
+        mock_db.get.assert_any_call(PlayerModel, 1)
+        mock_db.commit.assert_called_once()
+        mock_db.close.assert_called_once()
+        assert result is None
 
 def test_delete_player(mock_session,player_repo):
     mock_db = mock_session.return_value
