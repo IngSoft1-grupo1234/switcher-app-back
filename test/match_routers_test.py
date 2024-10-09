@@ -16,19 +16,20 @@ def test_create_match():
     
     
     with patch.object(MatchRepository, 'create_match', return_value=mock_db_match):
-        response = client.post("/matches/", json={"match_name": "test_match",
-                                                  "max_players": 4,
-                                                  "host": 1})
-        expected_response = {
-        "match_name": "test_match",
-        "max_players": 4,
-        "host": 1,
-        "match_id": 1,
-        "operation_result": "Succesfully created!"
-    }
-        
-        assert response.status_code == 201
-        assert response.json() == expected_response
+        with patch.object(PlayerRepository, 'assign_match_to_player', return_value=None):
+            response = client.post("/matches/", json={"match_name": "test_match",
+                                                    "max_players": 4,
+                                                    "host": 1})
+            expected_response = {
+            "match_name": "test_match",
+            "max_players": 4,
+            "host": 1,
+            "match_id": 1,
+            "operation_result": "Succesfully created!"
+            }
+            
+            assert response.status_code == 201
+            assert response.json() == expected_response
 
 def test_get_match():
     expected_response = {

@@ -20,6 +20,10 @@ class MoveCard(Base):
     move_card_id = Column(Integer, primary_key=True, autoincrement=True)
     move_card_type = Column(SQLAEnum(MoveCardType), nullable=False)
     player_id = Column(Integer, ForeignKey('players.player_id'), nullable=True)
+    match_id = Column(Integer, ForeignKey('matches.match_id'), nullable=False)
     is_active = Column(Boolean, default=False)
 
+
     players = relationship("Player", back_populates="move_cards")
+    matches = relationship("Match", back_populates="move_cards")
+    

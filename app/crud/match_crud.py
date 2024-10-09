@@ -3,6 +3,7 @@ from app.models.match_models import Match as MatchModel
 from app.models.player_models import Player as PlayerModel
 from app.models.movecard_models import MoveCard as MoveCardModel
 from app.models.movecard_models import MoveCardType
+from app.crud.movecard_crud import MoveCardRepository
 from app.database import session
 import random
 import json
@@ -117,20 +118,44 @@ class MatchRepository:
 
     def start_match(self, match_id):
         db = session()
+        move_card_repo = MoveCardRepository()
+
         try:
             match = db.query(MatchModel).get(match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            
+
             self.__validate_match_start(match)
-                
-            # Crea turnos para jugadores
+            
+            move_card_types = MoveCardType.__members__.values()
+
+            for move_card_type in move_card_types:
+                for _ in range(7):
+                    move_card_repo.create_move_card(match_id=match.match_id, move_card_type=move_card_type)
+                    
+            move_cards = db.query(MoveCardModel.move_card_id).filter(
+                MoveCardModel.match_id == match_id,
+                MoveCardModel.is_active == False,
+                MoveCardModel.player_id == None
+            ).all()
+
+            random.shuffle(move_cards)
+
+            match_players = self.get_player_ids_in_match(match_id)
+            
+            for player in match_players:
+                player_cards = move_cards[:3]
+                move_cards = move_cards[3:]
+
+                for card in player_cards:
+                    move_card_repo.assign_move_card_to_player(card, player)
+
             shuffled_turns = self.__shuffle_turns(match.players)
             match.turns = json.dumps(shuffled_turns)
-            match.has_begun = True
+            match.has_begun = True                     
 
             db.commit()
-            return shuffled_turns # regresa lista normal para dumpearla despues
+            return shuffled_turns
         finally:
             db.close()
 
