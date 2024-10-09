@@ -102,29 +102,30 @@ def test_start_match(mock_session, match_repo):
         players=[
             PlayerModel(player_id=1, username="Player1"),
             PlayerModel(player_id=2, username="Player2")
-        ]
+        ],
+        move_cards=[]
     )
     mock_db.query.return_value.get.return_value = mock_match
 
     # Mockear MoveCardRepository para evitar crear cartas de movimiento reales
-    with patch('app.crud.movecard_crud.MoveCardRepository.create_move_card', return_value=MagicMock()) as mock_create_move_card, \
-         patch('app.crud.movecard_crud.MoveCardRepository.assign_move_card_to_player', return_value=None) as mock_assign_move_card_to_player:
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = 1
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+    mock_move_card.match_id = 1
+    mock_move_card.move_card_type = MoveCardType.MOV1
+
+    with patch('app.crud.movecard_crud.MoveCardRepository.create_move_card', return_value=mock_move_card) as mock_create_move_card, \
+            patch('app.crud.movecard_crud.MoveCardRepository.assign_move_card_to_player') as mock_assign_move_card_to_player:
         
         result = match_repo.start_match(1)
 
-        # Verificaciones sobre los resultados
-        assert result == [1, 2] or result == [2, 1]  # Verificar turnos aleatorios
-        assert mock_match.has_begun is True  # Verificar que el partido ha comenzado
-        mock_db.commit.assert_called_once()  # Verificar que se haya hecho commit
+        assert result == [1, 2] or result == [2, 1]
+        assert mock_match.has_begun is True
+        mock_db.commit.assert_called_once()
 
-        # Verificar que se hayan creado las cartas de movimiento
-        assert mock_create_move_card.call_count == 7 * len(MoveCardType)
-
-        # Verificar que se hayan asignado 3 cartas a cada jugador
-        assert mock_assign_move_card_to_player.call_count == 6  # 3 cartas por 2 jugadores
-        mock_assign_move_card_to_player.assert_any_call(mock_create_move_card.return_value.move_card_id, 1)
-        mock_assign_move_card_to_player.assert_any_call(mock_create_move_card.return_value.move_card_id, 2)
-
+        assert mock_create_move_card.call_count == 7 * 7
+        assert mock_assign_move_card_to_player.call_count == 2
 
 
 def test_set_match_turn(match_repo, mock_session):

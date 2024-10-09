@@ -56,3 +56,225 @@ def test_create_move_card_limit_exceeded(mock_session, move_card_repo):
     
     assert excinfo.value.status_code == 400
     assert excinfo.value.detail == "Cannot create more than 7 move cards of the same type"
+
+
+def test_assign_move_card_to_player_success(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+    mock_db.add = MagicMock()
+    mock_db.commit = MagicMock()
+    mock_db.refresh = MagicMock()
+
+    player_id = 1
+    match_id = 1
+    move_card_id = 1
+
+    mock_player = MagicMock()
+    mock_player.player_id = player_id
+    mock_player.move_cards = []
+    mock_player.match_id = match_id
+
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = move_card_id
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+    mock_move_card.match_id = match_id
+
+    mock_match = MagicMock()
+    mock_match.match_id = match_id
+
+
+    mock_db.get.side_effect = [
+        mock_player,
+        mock_move_card,
+        mock_match
+    ]
+
+    move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+
+    mock_db.commit.assert_called_once()
+    assert mock_move_card.player_id == player_id
+    assert mock_move_card.is_active is True
+    assert mock_player.move_cards == [mock_move_card]
+
+
+def test_assign_move_card_to_player_move_card_not_found(mock_session, move_card_repo):
+    player_id = 1
+    move_card_id = 1
+
+    mock_session.return_value.get.return_value = None
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+    
+    assert excinfo.value.status_code == 404
+    assert excinfo.value.detail == "Move card not found"
+
+
+def test_assign_move_card_to_player_move_card_already_active(mock_session, move_card_repo):
+    player_id = 1
+    move_card_id = 1
+
+    mock_move_card = MagicMock()
+    mock_move_card.is_active = True
+
+    mock_session.return_value.get.return_value = mock_move_card
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+    
+    assert excinfo.value.status_code == 400
+    assert excinfo.value.detail == "Move card is currently in use"
+
+
+def test_assign_move_card_to_player_move_card_already_assigned(mock_session, move_card_repo):
+    player_id = 1
+    move_card_id = 1
+
+    mock_move_card = MagicMock()
+    mock_move_card.is_active = False
+    mock_move_card.player_id = 2
+
+    mock_session.return_value.get.return_value = mock_move_card
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+    
+    assert excinfo.value.status_code == 400
+    assert excinfo.value.detail == "Move card is already assigned to a player"
+
+
+def test_assign_move_card_to_player_player_not_found(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+    move_card_id = 1
+
+    mock_player = None
+
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = move_card_id
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+
+    mock_db.get.side_effect = [
+        mock_player,
+        mock_move_card
+    ]
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+
+    assert excinfo.value.status_code == 404
+    assert excinfo.value.detail == "Player not found"
+
+
+def test_assign_move_card_to_player_player_move_card_limit_exceeded(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+    move_card_id = 1
+
+    mock_player = MagicMock()
+    mock_player.player_id = player_id
+    mock_player.match_id = 1
+    mock_player.move_cards = [MagicMock() for _ in range(3)]
+
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = move_card_id
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+    mock_move_card.match_id = 1
+
+    mock_db.get.side_effect = [
+        mock_player,
+        mock_move_card
+    ]
+
+    mock_db.query.return_value.filter.return_value.count.return_value = 3
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+
+    assert excinfo.value.status_code == 400
+    assert excinfo.value.detail == "Player already has 3 active move cards"
+    
+
+def test_assign_move_card_to_player_move_card_not_in_match(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+    move_card_id = 1
+
+    mock_player = MagicMock()
+    mock_player.player_id = player_id
+    mock_player.match_id = 1
+
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = move_card_id
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+    mock_move_card.match_id = 2
+
+    mock_db.get.side_effect = [
+        mock_player,
+        mock_move_card
+    ]
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.assign_move_card_to_player(move_card_id, player_id)
+
+    assert excinfo.value.status_code == 400
+    assert excinfo.value.detail == "Move card does not belong to the player's match"
+
+
+def test_get_move_cards_by_player_success(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+
+    mock_player = MagicMock()
+    mock_player.player_id = player_id
+
+    mock_move_cards = [MagicMock() for _ in range(3)]
+
+    mock_db.get.return_value = mock_player
+    mock_db.query.return_value.filter.return_value.all.return_value = mock_move_cards
+
+    result = move_card_repo.get_move_cards_by_player(player_id)
+
+    assert result == mock_move_cards
+
+
+def test_get_move_cards_by_player_player_not_found(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+
+    mock_db.get.return_value = None
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.get_move_cards_by_player(player_id)
+
+    assert excinfo.value.status_code == 404
+    assert excinfo.value.detail == "Player not found"
+
+
+def test_get_move_cards_by_player_no_move_cards_found(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    player_id = 1
+
+    mock_player = MagicMock()
+    mock_player.player_id = player_id
+
+    mock_db.get.return_value = mock_player
+    mock_db.query.return_value.filter.return_value.all.return_value = []
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.get_move_cards_by_player(player_id)
+
+    assert excinfo.value.status_code == 404
+    assert excinfo.value.detail == "No move cards found for this player"
+
+
+    
