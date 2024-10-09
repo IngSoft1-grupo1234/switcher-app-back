@@ -53,10 +53,12 @@ class MoveCardRepository:
             active_move_cards = db.query(MoveCardModel).filter(
                 MoveCardModel.player_id == player_id,
                 MoveCardModel.is_active == True
-            ).count()
-            
-            if isinstance(active_move_cards, int) and active_move_cards > 3:
+            ).count()            
+            if isinstance(active_move_cards, int) and active_move_cards >= 3:
                 raise HTTPException(status_code=400, detail="Player already has 3 active move cards")
+
+            if move_card.match_id != player.match_id:
+                raise HTTPException(status_code=400, detail="Move card does not belong to the player's match")
             
             move_card.player_id = player_id
             player.move_cards.append(move_card)
@@ -64,6 +66,7 @@ class MoveCardRepository:
 
             db.commit()
 
+            return move_card
         finally:
             db.close()
 

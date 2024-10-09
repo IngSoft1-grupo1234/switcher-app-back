@@ -60,7 +60,6 @@ async def delete_match(match_id: int):
     repo.delete_match(match_id=match_id)
 
 
-
 # Empieza una partida inicializando los turnos, por ahora. ✓
 @router.put("/matches/{match_id}/start", status_code=status.HTTP_204_NO_CONTENT)
 async def start_match(match_id: int):
