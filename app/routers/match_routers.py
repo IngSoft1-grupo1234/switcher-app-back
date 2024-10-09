@@ -78,12 +78,17 @@ async def start_match(match_id: int):
     # print(f"<> <> <> <> START MATCH MESSAGE: {json.dumps(message)}")
     await player_manager.broadcast_to_id_list(json.dumps(message), turns)
 
-# set current_turn ✓ 
-# Deberia ser cambiado a "advance turn" que avance al siguiente turno dentro de la lista de turnos /!\ /!\ /!\
-@router.put("/matches/{match_id}/turn/{turn}", status_code=status.HTTP_204_NO_CONTENT)
-async def set_match_turn(match_id: int, turn: int):
+# Pasa el turno al siguiente jugador ✓ 
+@router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
+async def pass_turn(match_id):
     repo = MatchRepository()
-    repo.set_match_turn(match_id=match_id, turn=turn)
+    next_player = repo.get_next_player(match_id=match_id)
+    repo.pass_turn(match_id=match_id)
+
+    message = {"action": "next-turn", "data": {"next_player_name":next_player}}
+
+    ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
+    await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
 
 
 # set player_count  ✓

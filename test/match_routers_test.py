@@ -112,11 +112,6 @@ def test_start_match():
         response = client.put(f"/matches/{match_id}/start")
         assert response.status_code == 204
 
-def test_set_match_turn():
-    with patch.object(MatchRepository, 'set_match_turn', return_value=None):
-        response = client.put(f"/matches/1/turn/1")
-        assert response.status_code == 204
-
 def test_set_player_count():
     with patch('app.crud.match_crud.MatchRepository.set_player_count', return_value=None):
         response = client.put("/matches/1/player_count/1")
@@ -155,3 +150,34 @@ def test_start_match_not_found():
 
         assert exc_info.value.status_code == 404
         assert exc_info.value.detail == "Match not found."
+
+
+
+def test_pass_turn():
+    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=None):
+        response = client.put("/matches/1/next_turn")
+        assert response.status_code == 204
+
+
+def test_pass_turn_match_not_found():
+    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=None):
+        with patch('app.crud.match_crud.MatchRepository.get_next_player', return_value=None):
+            with pytest.raises(HTTPException) as exc_info:
+                client.put("/matches/999/next_turn")
+
+            assert exc_info.value.status_code == 404
+            assert exc_info.value.detail == "Match not found."
+
+
+def test_pass_turn_no_next_player():
+    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=None):
+        with patch('app.crud.match_crud.MatchRepository.get_next_player', return_value=None):
+            response = client.put("/matches/1/next_turn")
+            assert response.status_code == 204
+
+
+
+
+
+
+

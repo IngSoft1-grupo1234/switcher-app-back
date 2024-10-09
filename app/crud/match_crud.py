@@ -191,7 +191,8 @@ class MatchRepository:
 
             shuffled_turns = self.__shuffle_turns(match.players)
             match.turns = json.dumps(shuffled_turns)
-            match.has_begun = True                     
+            match.has_begun = True
+            match.current_turn = shuffled_turns[0]
 
             # Crea tablero y randomiza colores
             colors = ['r'] * 9 + ['b'] * 9 + ['y'] * 9 + ['g'] * 9
@@ -221,16 +222,28 @@ class MatchRepository:
         random.shuffle(ids_list)
         return ids_list
 
-    def set_match_turn(self, match_id, turn):
+
+    def pass_turn(self, match_id):
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
+
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            match.current_turn = turn
+            if not match.has_begun:
+                raise HTTPException(status_code=409, detail="Match has not started.")
+            
+            turns = json.loads(match.turns)
+            
+            current_index = turns.index(match.current_turn)
+            next_index = (current_index + 1) % len(turns)
+            next_turn = turns[next_index]
+
+            match.current_turn = next_turn
             db.commit()
         finally:
             db.close()
+
     
     def set_player_count(self, match_id, player_count):
         db = session()
@@ -260,10 +273,12 @@ class MatchRepository:
         finally:
             db.close()
     
+    
+    # Para obtener los IDs de los jugadores en una partida
     def get_player_ids_in_match(self, match_id):
         db = session()
         try:
-            match = db.query(MatchModel).get(match_id)
+            match = db.get(MatchModel, match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             elif match:
@@ -271,4 +286,30 @@ class MatchRepository:
                 return player_ids
         finally:
             db.close()
+    
+
+    # Para obtener el nombre del jugador que sigue en el turno
+    def get_next_player(self, match_id):
+        db = session()
+        try:
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            if not match.has_begun:
+                raise HTTPException(status_code=409, detail="Match has not started.")
+            
+            turns = json.loads(match.turns)
+            current_index = turns.index(match.current_turn)
+            next_index = (current_index + 1) % len(turns)
+            next_player_id = turns[next_index]
+            next_player = db.get(PlayerModel, next_player_id)
+            if not next_player:
+                raise HTTPException(status_code=404, detail="Next player not found.")
+            return next_player.username if next_player else None
+        finally:
+            db.close()
+    
+        
+      
+    
     
