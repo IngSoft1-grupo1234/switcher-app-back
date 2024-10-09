@@ -31,8 +31,8 @@ class PlayerRepository:
     def assign_match_to_player(self, player_id, match_id):
         try:
             db = session()
-            player = db.get(PlayerModel, player_id)
-            match = db.get(MatchModel, match_id)
+            player = self.get_player(player_id)
+            match = MatchRepository().get_match(match_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
             if not match:
