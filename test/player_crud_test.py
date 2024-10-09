@@ -103,11 +103,11 @@ def test_unassign_match_to_player(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_db.get.side_effect = [
         PlayerModel(player_id=1, match_id=1),
+        MatchModel(player_count=1, has_begun=False, host=2, players=[])
     ]
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
-    with patch('app.crud.match_crud.session') as match_thing:
-        match_thing.return_value.query.return_value.get.return_value = MatchModel(player_count=1)
+    with patch('app.crud.match_crud.session', return_value=mock_db):
         result = player_repo.unassign_match_to_player(1)
         
         mock_db.get.assert_any_call(PlayerModel, 1)

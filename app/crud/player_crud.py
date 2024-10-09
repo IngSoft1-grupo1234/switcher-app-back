@@ -58,7 +58,9 @@ class PlayerRepository:
             player = db.get(PlayerModel, player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
-            match = MatchRepository().get_match(player.match_id)
+            match = db.get(MatchModel, player.match_id)
+            if player.match_id is None:
+                raise HTTPException(status_code=400, detail="Player is not assigned to any match.")
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             
@@ -80,7 +82,7 @@ class PlayerRepository:
     def delete_player(self, player_id):
         try:
             db = session()
-            player = self.get_player(player_id)
+            player = db.get(PlayerModel, player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
             if player.match:
