@@ -121,7 +121,7 @@ class MatchRepository:
                 MoveCardModel.is_active == False,
                 MoveCardModel.player_id == None
             ).all()
-
+            
             random.shuffle(move_cards)
 
             match_players = self.get_player_ids_in_match(match_id)

@@ -7,6 +7,7 @@ from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.database import session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
+import json
 
 class PlayerRepository:
     def create_player(self, username) -> PlayerModel:
@@ -49,6 +50,8 @@ class PlayerRepository:
                     match.player_count = 0
                 match.player_count += 1
                 db.commit()
+            else:
+                raise HTTPException(status_code=409, detail="Player is already in the match.")
                
         except IntegrityError:
             raise HTTPException(status_code=409, detail="Match is full.")
@@ -70,6 +73,8 @@ class PlayerRepository:
             if match.has_begun: # desconectarse midgame, no pasa nada
                 player.match_id = None
                 match.player_count -= 1
+                json.loads(match.turns).pop(player_id)
+                
                 db.commit()
 
                 if match.player_count == 1: # si solo queda un jugador, gana, retorno su id
@@ -91,8 +96,8 @@ class PlayerRepository:
             player = db.get(PlayerModel, player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
-            if player.match:
-                player.match.player_count -= 1
+            if player.matches:
+                player.matches.player_count -= 1
             db.delete(player)
             db.commit()
             return player
