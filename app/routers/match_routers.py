@@ -62,7 +62,6 @@ async def start_match(match_id: int):
 
     turns = information_to_send["turns"]
     board = information_to_send["board"]
-    cards = information_to_send["cards"]
 
     move_cards_list = {}
     for player in turns:

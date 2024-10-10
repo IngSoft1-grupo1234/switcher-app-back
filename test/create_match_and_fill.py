@@ -22,7 +22,8 @@ match_id = match_response.json()["match_id"]
 
 
 for player_id in player_ids:
-    requests.put(f"{BASE_URL}/players/{player_id}/AssignToMatch/{match_id}")
+    if player_id != first_player_id:
+        requests.put(f"{BASE_URL}/players/{player_id}/AssignToMatch/{match_id}")
 
 requests.put(f"{BASE_URL}/matches/{match_id}/start")
 
