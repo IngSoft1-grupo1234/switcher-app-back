@@ -70,10 +70,25 @@ class PlayerRepository:
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             
+            # desasignar cartas movimiento del jugador
+            for move_cards in player.move_cards:
+                move_cards.is_active = False
+                move_cards.player_id = None
+                
+
+            # desasignar cartas figura del jugador
+            for shape_cards in player.shape_cards:
+                shape_cards.is_active = False
+                shape_cards.player_id = None
+                
+
             if match.has_begun: # desconectarse midgame, no pasa nada
                 player.match_id = None
                 match.player_count -= 1
-                json.loads(match.turns).pop(player_id)
+                turns = json.loads(match.turns)
+                if player_id in turns:
+                    turns.remove(player_id)
+                match.turns = json.dumps(turns)
                 
                 db.commit()
 
