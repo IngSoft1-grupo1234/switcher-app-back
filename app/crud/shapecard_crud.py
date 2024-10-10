@@ -76,7 +76,8 @@ class ShapeCardRepository:
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found")
             
-            shape_cards = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player_id).all()
+            shape_cards = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player_id, 
+                                                          ShapeCardModel.is_active == True).all()
             if not shape_cards:
                 raise HTTPException(status_code=404, detail="No shape cards found for this player")
             

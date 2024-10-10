@@ -56,6 +56,8 @@ async def get_notbegun_matches()-> Dict[str, Any]:
 @router.put("/matches/{match_id}/start", status_code=status.HTTP_204_NO_CONTENT)
 async def start_match(match_id: int):
     repo = MatchRepository()
+    movecard_repo = MoveCardRepository()
+    shapecard_repo = ShapeCardRepository()
     information_to_send = repo.start_match(match_id=match_id)
 
     turns = information_to_send["turns"]
@@ -63,13 +65,22 @@ async def start_match(match_id: int):
     cards = information_to_send["cards"]
 
     move_cards_list = {}
-    for player_id, card_info in cards.items():
-        move_cards_list[player_id] = card_info['move_cards']
+    for player in turns:
+        players_cards = movecard_repo.get_move_cards_by_player(player)
+        move_cards_list[player] = []
+        for card in players_cards:
+            move_cards_list[player].append(card.move_card_type.value)
+        
+    print(f"MOVE CARDS LIST 1: {move_cards_list}\n")
     
     figure_cards_list = {}
-    for player_id, card_info in cards.items():
-        figure_cards_list[player_id] = card_info['shape_cards']
-
+    for player in turns:
+        players_cards = shapecard_repo.get_shape_cards_by_player(player)
+        figure_cards_list[player] = []
+        for card in players_cards:
+            figure_cards_list[player].append(card.shape_card_type.value)
+    print(f"FIGURE CARDS LIST 1: {figure_cards_list}\n")
+    
     message = {
                 "action": "start-game",
                 "data": 
@@ -85,7 +96,6 @@ async def start_match(match_id: int):
         message_to_each_player = {
         "action": "start-game-card-information",
         "data": {
-            "figure_cards": figure_cards_list[player_id],
             "move_cards": move_cards_list[player_id]
         }
         }   
