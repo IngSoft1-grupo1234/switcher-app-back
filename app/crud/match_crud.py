@@ -101,6 +101,8 @@ class MatchRepository:
         move_card_repo = MoveCardRepository()
         shape_card_repo = ShapeCardRepository()
 
+        all_player_cards = {}
+
         try:
             match = db.query(MatchModel).get(match_id)
             if not match:
@@ -127,8 +129,14 @@ class MatchRepository:
             for player in match_players:
                 player_cards = move_cards[:3]
                 move_cards = move_cards[3:]
+                
+                player_cards_not_a_fkin_tuple = [db.get(MoveCardModel, card[0]).move_card_type.name for card in player_cards]
+                all_player_cards[player] = {
+                    "move_cards": player_cards_not_a_fkin_tuple
+                }
 
                 for card in player_cards:
+
                     move_card_repo.assign_move_card_to_player(card, player)
             
             shape_card_types = ShapeCardType.__members__.values()
@@ -141,7 +149,7 @@ class MatchRepository:
                 ShapeCardModel.player_id == None,
                 ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.EASY
             ).all()
-
+            
             hard_shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
                 ShapeCardModel.player_id == None,
                 ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.HARD
@@ -157,6 +165,13 @@ class MatchRepository:
                     hard_player_cards = hard_shape_cards[:18]
                     hard_shape_cards = hard_shape_cards[18:]
 
+                    all_shape_cards = hard_player_cards + easy_player_cards
+                    random.shuffle(all_shape_cards)
+                    active_shape_cards = all_shape_cards[:3]
+
+                    for card in active_shape_cards:
+                        shape_card_repo.set_active_shape_card(card)
+
                     for card in easy_player_cards:
                         shape_card_repo.assign_shape_card_to_player(card, player)
                     
@@ -170,6 +185,13 @@ class MatchRepository:
                     hard_player_cards = hard_shape_cards[:12]
                     hard_shape_cards = hard_shape_cards[12:]
 
+                    all_shape_cards = hard_player_cards + easy_player_cards
+                    random.shuffle(all_shape_cards)
+                    active_shape_cards = all_shape_cards[:3]
+
+                    for card in active_shape_cards:
+                        shape_card_repo.set_active_shape_card(card)
+
                     for card in easy_player_cards:
                         shape_card_repo.assign_shape_card_to_player(card, player)
                     
@@ -181,6 +203,16 @@ class MatchRepository:
                     easy_shape_cards = easy_shape_cards[4:]
                     hard_player_cards = hard_shape_cards[:9]
                     hard_shape_cards = hard_shape_cards[9:]
+
+                    all_shape_cards = hard_player_cards + easy_player_cards
+                    random.shuffle(all_shape_cards)
+                    active_shape_cards = all_shape_cards[:3]
+
+                    for card in active_shape_cards:
+                        shape_card_repo.set_active_shape_card(card)
+
+                    # chanchada
+                    all_player_cards[player]["shape_cards"] = [db.get(ShapeCardModel, card[0]).shape_card_type.name for card in active_shape_cards]
 
                     for card in easy_player_cards:
                         shape_card_repo.assign_shape_card_to_player(card, player)
@@ -204,7 +236,8 @@ class MatchRepository:
             db.commit()
             return {
                 "turns": shuffled_turns,
-                "board": board
+                "board": board,
+                "cards": all_player_cards
             }
         finally:
             db.close()
@@ -238,7 +271,7 @@ class MatchRepository:
             current_index = turns.index(match.current_turn)
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
-
+            
             match.current_turn = next_turn
             db.commit()
         finally:

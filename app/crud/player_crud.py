@@ -4,7 +4,6 @@ from app.models.movecard_models import MoveCard as MoveCardModel
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
-from app.crud.match_crud import MatchRepository
 from app.database import session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -72,6 +71,9 @@ class PlayerRepository:
                 player.match_id = None
                 match.player_count -= 1
                 db.commit()
+
+                if match.player_count == 1: # si solo queda un jugador, gana, retorno su id
+                    return match.players[0].player_id
             elif match.host == player.player_id: # se desconecta el host en el lobby, se borra partida
                 player.match_id = None
                 db.delete(match)

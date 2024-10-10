@@ -66,17 +66,37 @@ async def start_match(match_id: int):
 
     turns = information_to_send["turns"]
     board = information_to_send["board"]
+    cards = information_to_send["cards"]
+
+    move_cards_list = {}
+    for player_id, card_info in cards.items():
+        move_cards_list[player_id] = card_info['move_cards']
+    
+    figure_cards_list = {}
+    for player_id, card_info in cards.items():
+        figure_cards_list[player_id] = card_info['shape_cards']
 
     message = {
                 "action": "start-game",
                 "data": 
                     {
                         "turns": turns,
-                        "board": board
+                        "board": board,
+                        "figure_cards": figure_cards_list
                     }
               }
-    # print(f"<> <> <> <> START MATCH MESSAGE: {json.dumps(message)}")
+
     await player_manager.broadcast_to_id_list(json.dumps(message), turns)
+    for player_id in turns:
+        message_to_each_player = {
+        "action": "start-game-card-information",
+        "data": {
+            "figure_cards": figure_cards_list[player_id],
+            "move_cards": move_cards_list[player_id]
+        }
+        }   
+
+        await player_manager.send(json.dumps(message_to_each_player), player_id)
 
 # Pasa el turno al siguiente jugador ✓ 
 @router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
@@ -86,7 +106,7 @@ async def pass_turn(match_id):
     repo.pass_turn(match_id=match_id)
 
     message = {"action": "next-turn", "data": {"next_player_name":next_player}}
-
+    print(f"<> <> <> <> NEXT TURN MESSAGE: {json.dumps(message)}")
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
 

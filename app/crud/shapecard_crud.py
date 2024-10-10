@@ -57,6 +57,17 @@ class ShapeCardRepository:
         finally:
             db.close()
 
+    def set_active_shape_card(self, shape_card_id: int): # nueva!!!
+        db = session()
+        try:
+            shape_card = db.get(ShapeCardModel,shape_card_id)
+            if not shape_card:
+                raise HTTPException(status_code=404, detail="Shape card not found")
+            
+            shape_card.is_active = True
+            db.commit()
+        finally:
+            db.close()
 
     def get_shape_cards_by_player(self, player_id: int) -> list[ShapeCardModel]:
         db = session()
