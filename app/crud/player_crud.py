@@ -41,6 +41,8 @@ class PlayerRepository:
                 raise HTTPException(status_code=404, detail="Player not found.")
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
+            if match.has_begun:
+                raise HTTPException(status_code=400, detail="Match has already begun.")
 
             # Si el jugador no esta en la partida
             if player.match_id != match.match_id:

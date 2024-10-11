@@ -105,6 +105,8 @@ class MatchRepository:
             match = db.query(MatchModel).get(match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
+            if match.has_begun:
+                raise HTTPException(status_code=409, detail="Match has already started.")
 
             self.__validate_match_start(match)
             # Distribuir cartas de movimiento
