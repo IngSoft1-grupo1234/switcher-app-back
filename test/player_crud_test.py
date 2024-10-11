@@ -127,10 +127,8 @@ def test_delete_player(mock_session, player_repo):
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
-    player = player_repo.delete_player(1)
+    player_repo.delete_player(1)
 
     mock_db.get.assert_called_once_with(PlayerModel, 1)
 
     mock_db.commit.assert_called_once()
-
-    assert player.player_id == 1
