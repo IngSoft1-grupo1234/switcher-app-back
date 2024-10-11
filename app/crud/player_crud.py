@@ -64,6 +64,8 @@ class PlayerRepository:
             player = db.get(PlayerModel, player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
+            if player.match_id is None:
+                raise HTTPException(status_code=400, detail="Player is not assigned to any match.")
             match = db.get(MatchModel, player.match_id)
             if player.match_id is None:
                 raise HTTPException(status_code=400, detail="Player is not assigned to any match.")

@@ -30,6 +30,34 @@ class ShapeCardRepository:
             return shape_card.shape_card_id
         finally:
             db.close()
+    
+
+    def get_easy_shape_cards_ids_unassigned(self) -> list[ShapeCardModel]:
+        db = session()
+        try:
+            shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
+                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.EASY,
+                ShapeCardModel.player_id == None
+            ).all()
+            if not shape_cards:
+                raise HTTPException(status_code=404, detail="No easy shape cards unassigned found")
+
+            shape_cards_ids = [sc[0] for sc in shape_cards]
+            return shape_cards_ids
+        finally:
+            db.close()
+        
+    def get_hard_shape_cards_ids_unassigned(self) -> list[ShapeCardModel]:
+        db = session()
+        try:
+            shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
+                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.HARD,
+                ShapeCardModel.player_id == None
+            ).all()
+            shape_cards_ids = [sc[0] for sc in shape_cards]
+            return shape_cards_ids
+        finally:
+            db.close()
 
 
     def assign_shape_card_to_player(self, shape_card_id: int, player_id: int) :
@@ -57,12 +85,25 @@ class ShapeCardRepository:
         finally:
             db.close()
 
-    def set_active_shape_card(self, shape_card_id: int): # nueva!!!
+    def set_active_shape_card(self, shape_card_id: int):
         db = session()
         try:
             shape_card = db.get(ShapeCardModel,shape_card_id)
             if not shape_card:
                 raise HTTPException(status_code=404, detail="Shape card not found")
+
+            if not shape_card.player_id:
+                raise HTTPException(status_code=400, detail="Shape card is not assigned to a player")
+            
+            if shape_card.is_active == True:
+                raise HTTPException(status_code=400, detail="Shape card is already active")
+            
+            active_shape_cards = db.query(ShapeCardModel).filter(
+                ShapeCardModel.player_id == shape_card.player_id,
+                ShapeCardModel.is_active == True
+            ).count()            
+            if isinstance(active_shape_cards, int) and active_shape_cards >= 3:
+                raise HTTPException(status_code=400, detail="Player already has 3 active shape cards")
             
             shape_card.is_active = True
             db.commit()
@@ -79,11 +120,12 @@ class ShapeCardRepository:
             shape_cards = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player_id, 
                                                           ShapeCardModel.is_active == True).all()
             if not shape_cards:
-                raise HTTPException(status_code=404, detail="No shape cards found for this player")
+                raise HTTPException(status_code=404, detail="No shape cards actives found for this player")
             
             return shape_cards
         finally:
             db.close()
+        
     
     # futuro para terminar turno 
     # def get_amount_of_move_cards_by_player(self, player_id: int) -> int:

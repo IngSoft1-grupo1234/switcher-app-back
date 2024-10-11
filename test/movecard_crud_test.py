@@ -58,6 +58,20 @@ def test_create_move_card_limit_exceeded(mock_session, move_card_repo):
     assert excinfo.value.detail == "Cannot create more than 7 move cards of the same type"
 
 
+def test_get_move_cards_id_in_match_no_move_cards_found(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+
+    match_id = 1
+
+    mock_db.query.return_value.filter.return_value.all.return_value = []
+
+    with pytest.raises(HTTPException) as excinfo:
+        move_card_repo.get_move_cards_id_in_match(match_id)
+
+    assert excinfo.value.status_code == 404
+    assert excinfo.value.detail == "No move cards found for this match"
+
+
 def test_assign_move_card_to_player_success(mock_session, move_card_repo):
     mock_db = mock_session.return_value
     mock_db.add = MagicMock()

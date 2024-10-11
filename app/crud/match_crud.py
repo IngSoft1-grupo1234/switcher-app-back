@@ -107,109 +107,10 @@ class MatchRepository:
                 raise HTTPException(status_code=404, detail="Match not found.")
 
             self.__validate_match_start(match)
+            # Distribuir cartas de movimiento
             
-            move_card_types = MoveCardType.__members__.values()
-
-            for move_card_type in move_card_types:
-                for _ in range(7):
-                    move_card_repo.create_move_card(match_id=match.match_id, move_card_type=move_card_type)
-                    
-            move_cards = db.query(MoveCardModel.move_card_id).filter(
-                MoveCardModel.match_id == match_id,
-                MoveCardModel.is_active == False,
-                MoveCardModel.player_id == None
-            ).all()
-            
-            random.shuffle(move_cards)
-
-            match_players = self.get_player_ids_in_match(match_id)
-            
-            for player in match_players:
-                player_cards = move_cards[:3]
-                move_cards = move_cards[3:]
-
-                for card in player_cards:
-
-                    move_card_repo.assign_move_card_to_player(card, player)
-            
-            shape_card_types = ShapeCardType.__members__.values()
-
-            for shape_card_type in shape_card_types:
-                for _ in range(2):
-                    shape_card_repo.create_shape_card(shape_card_type=shape_card_type)
-
-            easy_shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
-                ShapeCardModel.player_id == None,
-                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.EASY
-            ).all()
-            
-            hard_shape_cards = db.query(ShapeCardModel.shape_card_id).filter(
-                ShapeCardModel.player_id == None,
-                ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.HARD
-            ).all()
-
-            random.shuffle(easy_shape_cards)
-            random.shuffle(hard_shape_cards)
-
-            if len(match_players) == 2:
-                for player in match_players:
-                    easy_player_cards = easy_shape_cards[:8]
-                    easy_shape_cards = easy_shape_cards[8:]
-                    hard_player_cards = hard_shape_cards[:18]
-                    hard_shape_cards = hard_shape_cards[18:]
-
-                    all_shape_cards = hard_player_cards + easy_player_cards
-                    random.shuffle(all_shape_cards)
-                    active_shape_cards = all_shape_cards[:3]
-
-                    for card in active_shape_cards:
-                        shape_card_repo.set_active_shape_card(card)
-
-                    for card in easy_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-                    
-                    for card in hard_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-
-            elif len(match_players) == 3:
-                for player in match_players:
-                    easy_player_cards = easy_shape_cards[:4]
-                    easy_shape_cards = easy_shape_cards[4:]
-                    hard_player_cards = hard_shape_cards[:12]
-                    hard_shape_cards = hard_shape_cards[12:]
-
-                    all_shape_cards = hard_player_cards + easy_player_cards
-                    random.shuffle(all_shape_cards)
-                    active_shape_cards = all_shape_cards[:3]
-
-                    for card in active_shape_cards:
-                        shape_card_repo.set_active_shape_card(card)
-
-                    for card in easy_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-                    
-                    for card in hard_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-            else :
-                for player in match_players:
-                    easy_player_cards = easy_shape_cards[:4]
-                    easy_shape_cards = easy_shape_cards[4:]
-                    hard_player_cards = hard_shape_cards[:9]
-                    hard_shape_cards = hard_shape_cards[9:]
-
-                    all_shape_cards = hard_player_cards + easy_player_cards
-                    random.shuffle(all_shape_cards)
-                    active_shape_cards = all_shape_cards[:3]
-
-                    for card in active_shape_cards:
-                        shape_card_repo.set_active_shape_card(card)
-
-                    for card in easy_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-                    
-                    for card in hard_player_cards:
-                        shape_card_repo.assign_shape_card_to_player(card, player)
-
+            self.__distribute_move_cards(match_id)
+            self.__distribute_shape_cards(match_id)
 
             shuffled_turns = self.__shuffle_turns(match.players)
             match.turns = json.dumps(shuffled_turns)
@@ -243,6 +144,68 @@ class MatchRepository:
         ids_list = [player.player_id for player in players]
         random.shuffle(ids_list)
         return ids_list
+    
+    # Modularization of start_match to distribute move cards, it is private
+    def __distribute_move_cards(self, match_id):
+        move_card_repo = MoveCardRepository()
+
+        move_card_types = MoveCardType.__members__.values()
+
+        for move_card_type in move_card_types:
+            for _ in range(7):
+                move_card_repo.create_move_card(match_id=match_id, move_card_type=move_card_type)
+                    
+        move_cards = move_card_repo.get_move_cards_id_in_match(match_id)
+        random.shuffle(move_cards)
+
+        match_players = self.get_player_ids_in_match(match_id)
+        for player in match_players:
+            player_cards = move_cards[:3]
+            move_cards = move_cards[3:]
+
+            for card in player_cards:
+                move_card_repo.assign_move_card_to_player(card, player)
+    
+    # Modularization of start_match to distribute shape cards, it is private
+    def __distribute_shape_cards(self, match_id):
+        shape_card_repo = ShapeCardRepository()
+        shape_card_types = ShapeCardType.__members__.values()
+
+        for shape_card_type in shape_card_types:
+            for _ in range(2):
+                shape_card_repo.create_shape_card(shape_card_type)
+
+        easy_shape_cards = shape_card_repo.get_easy_shape_cards_ids_unassigned()
+        hard_shape_cards = shape_card_repo.get_hard_shape_cards_ids_unassigned()
+
+        random.shuffle(easy_shape_cards)
+        random.shuffle(hard_shape_cards)
+
+        match_players = self.get_player_ids_in_match(match_id)
+        
+        easy_cards_per_player = len(easy_shape_cards) // len(match_players)
+        hard_cards_per_player = len(hard_shape_cards) // len(match_players)
+
+        for player in match_players:
+            easy_player_cards = easy_shape_cards[:easy_cards_per_player]
+            easy_shape_cards = easy_shape_cards[easy_cards_per_player:]
+            hard_player_cards = hard_shape_cards[:hard_cards_per_player]
+            hard_shape_cards = hard_shape_cards[hard_cards_per_player:]
+
+            for card in easy_player_cards:
+                shape_card_repo.assign_shape_card_to_player(card, player)
+                    
+            for card in hard_player_cards:
+                shape_card_repo.assign_shape_card_to_player(card, player)
+
+            all_shape_cards = hard_player_cards + easy_player_cards
+            random.shuffle(all_shape_cards)
+            active_shape_cards = all_shape_cards[:3]
+
+            for card in active_shape_cards:
+                shape_card_repo.set_active_shape_card(card)
+
+
 
 
     def pass_turn(self, match_id):
@@ -331,6 +294,7 @@ class MatchRepository:
         finally:
             db.close()
     
+
         
       
     

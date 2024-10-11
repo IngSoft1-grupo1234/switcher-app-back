@@ -117,15 +117,20 @@ def test_unassign_match_to_player(mock_session, player_repo):
 
 def test_delete_player(mock_session, player_repo):
     mock_db = mock_session.return_value
+
     mock_player = PlayerModel(player_id=1)
     mock_match = MatchModel(player_count=1)
     mock_player.match = mock_match
-    mock_db.query().get.return_value = mock_player
+
+    mock_db.get.return_value = mock_player
+
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
     player = player_repo.delete_player(1)
 
     mock_db.get.assert_called_once_with(PlayerModel, 1)
+
     mock_db.commit.assert_called_once()
+
     assert player.player_id == 1
