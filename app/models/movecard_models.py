@@ -1,5 +1,5 @@
 from app.database import Base
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy import Enum as SQLAEnum
 from sqlalchemy.orm import declarative_base
@@ -21,6 +21,8 @@ class MoveCard(Base):
     move_card_type = Column(SQLAEnum(MoveCardType), nullable=False)
     player_id = Column(Integer, ForeignKey('players.player_id'), nullable=True)
     match_id = Column(Integer, ForeignKey('matches.match_id'), nullable=False)
+    last_used_orientation = Column(Text, nullable=True)
+    last_used_position = Column(Text, nullable=True)
     is_active = Column(Boolean, default=False)
 
 

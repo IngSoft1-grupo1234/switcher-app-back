@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
 
 class MoveCardIn (BaseModel):
-    player_id: int
+    orientation: str
+    position: str
     model_config=ConfigDict(from_attributes=True)
 
 class MoveCardOut (BaseModel): 

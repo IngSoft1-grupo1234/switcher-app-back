@@ -78,6 +78,8 @@ class PlayerRepository:
             for move_cards in player.move_cards:
                 move_cards.is_active = False
                 move_cards.player_id = None
+                move_cards.last_used_orientation = None
+                move_cards.last_used_position = None
                 
 
             # desasignar cartas figura del jugador

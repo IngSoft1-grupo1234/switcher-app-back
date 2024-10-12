@@ -123,9 +123,20 @@ class MatchRepository:
             colors = ['r'] * 9 + ['b'] * 9 + ['y'] * 9 + ['g'] * 9
             random.shuffle(colors)
             board = [colors[i:i+6] for i in range(0, 36, 6)]
-            for row in board:
-                print(row)
             match.board = json.dumps(board)
+
+            # pretty print para testear jugar (comentar)
+            player_cards = move_card_repo.get_move_cards_by_player(shuffled_turns[0])
+            current_player = next(player for player in match.players if player.player_id == shuffled_turns[0])
+            print(f"<THE TURN IS FOR THE PLAYER {shuffled_turns[0]}, KNOWN AS {current_player.username}>")
+            print(f"THE BOARD IS:\n")
+            move_card_repo.pretty_print_board(board)
+            print(f"THE PLAYER HAS THE FOLLOWING MOVE CARDS:")
+            for cards in player_cards:
+                move_card_type_str = move_card_repo.imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
+                print(f"{cards.move_card_id} - {move_card_type_str}")
+            ################################
+
             db.commit()
             return {
                 "turns": shuffled_turns,
@@ -212,9 +223,10 @@ class MatchRepository:
 
     def pass_turn(self, match_id):
         db = session()
+        move_card_repo = MoveCardRepository()
         try:
             match = db.query(MatchModel).get(match_id)
-
+            
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             if not match.has_begun:
@@ -226,8 +238,13 @@ class MatchRepository:
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
             
+            board = move_card_repo.confirm_moves(match.current_turn)
+            if not board:
+                print("BOSS THERE'S SOMETHING WRONG!!!!!!!!!!!!!!!!!!!!!!!!")
             match.current_turn = next_turn
+            
             db.commit()
+            return board
         finally:
             db.close()
 

@@ -70,7 +70,7 @@ async def start_match(match_id: int):
         for card in players_cards:
             move_cards_list[player].append(card.move_card_type.value)
         
-    print(f"MOVE CARDS LIST 1: {move_cards_list}\n")
+    # print(f"MOVE CARDS LIST 1: {move_cards_list}\n")
     
     figure_cards_list = {}
     for player in turns:
@@ -78,7 +78,7 @@ async def start_match(match_id: int):
         figure_cards_list[player] = []
         for card in players_cards:
             figure_cards_list[player].append(card.shape_card_type.value)
-    print(f"FIGURE CARDS LIST 1: {figure_cards_list}\n")
+    # print(f"FIGURE CARDS LIST 1: {figure_cards_list}\n")
     
     message = {
                 "action": "start-game",
@@ -104,13 +104,22 @@ async def start_match(match_id: int):
 # Pasa el turno al siguiente jugador ✓ 
 @router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
 async def pass_turn(match_id):
+    # por ahora todos los jugadores pueden pasar el turno de todos.
+    # tendria que tomar player_id. PEROOOO es posible que un jugador
+    # se haga pasar por otro y pase el turno de otro jugador.
+    # pero esto nunca lo tenemos en cuenta XD
+    # habria que usar como player id al websocket de alguna manera, pero habria que cambiar todo el proyecto literalmente
     repo = MatchRepository()
     next_player = repo.get_next_player(match_id=match_id)
-    repo.pass_turn(match_id=match_id)
+    updated_board = repo.pass_turn(match_id=match_id)
 
     message = {"action": "next-turn", "data": {"next_player_name":next_player}}
     print(f"<> <> <> <> NEXT TURN MESSAGE: {json.dumps(message)}")
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
+
+    board_message = {"action": "update-board", "data": {"board": updated_board}}
+    print(f"NEXT TURN BOARD MESSAGE: {board_message}")
+    await player_manager.broadcast_to_id_list(json.dumps(board_message), ids_from_match)
 
     
