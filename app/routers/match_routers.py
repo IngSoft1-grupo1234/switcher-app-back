@@ -101,11 +101,19 @@ async def start_match(match_id: int):
 
         await player_manager.send(json.dumps(message_to_each_player), player_id)
 
+
+
 # Pasa el turno al siguiente jugador ✓ 
 @router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
 async def pass_turn(match_id):
     repo = MatchRepository()
     next_player = repo.get_next_player(match_id=match_id)
+
+    if next_player is None:
+        raise HTTPException(status_code=404, detail="Match not found.")
+    elif not next_player:
+        raise HTTPException(status_code=400, detail="No next player available.")
+
     repo.pass_turn(match_id=match_id)
 
     message = {"action": "next-turn", "data": {"next_player_name":next_player}}
