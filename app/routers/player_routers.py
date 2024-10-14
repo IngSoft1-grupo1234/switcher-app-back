@@ -45,11 +45,11 @@ async def unassign_match_to_player(player_id: int):
     db_player = repo.get_player(player_id=player_id)
     message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id}}
     
-    winner = repo.unassign_match_to_player(player_id=player_id)
-    if winner:
-        winner_message = {"action": "game-won","data": winner}
+    winner_json = repo.unassign_match_to_player(player_id=player_id)
+    if winner_json:
+        winner_message = {"action": "game-won","data": winner_json["winner_player_id"]}
         print(f"WINNER MESSAGE: {winner_message}")
-        await player_manager.send(json.dumps(winner_message), player_id)
+        await player_manager.send(json.dumps(winner_message), winner_json["winner_player_id"])
 
     
     print(f"EXIT MESSAGE: {message}")
