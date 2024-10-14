@@ -1,8 +1,7 @@
 from algoritmo import ShapeFitChecker
 from shapes import SHAPE_TYPES
 
-class DFS:
-    # Directions for moving in 4 directions (up, down, left, right)
+class ShapeDetector:
     def __init__(self):
         self.directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
@@ -16,7 +15,7 @@ class DFS:
                 visited[r][c] = True
                 group.append((r, c))
         
-                # Check the 4 neighbors
+                # Chequea vecinos
                 for dr, dc in self.directions:
                     new_r, new_c = r + dr, c + dc
                     if 0 <= new_r < len(board) and 0 <= new_c < len(board[0]):
@@ -42,11 +41,8 @@ class DFS:
         return color_groups
 
     def test_shape_fitting(self, board):
-        # Find and print the groups
         color_groups = self.find_color_groups(board)
         color_name = { 'r': 'Red', 'g': 'Green', 'b': 'Blue', 'y': 'Yellow' }
-        #for i, (color, group) in enumerate(color_groups):
-            #print(f"Group {i+1}: Color {color_name[color]}, Size {len(group)}, Cells {group}")
 
         sf = ShapeFitChecker()
         formas_disponibles = sf.formas_disponibles
@@ -66,3 +62,16 @@ class DFS:
                     continue  # continua el loop grande si no se rompe el loop chiquito
                 break  # si se rompe el chiquito entra aca y rompe el grande
         print(f"Total number of iterations: {iteration_count}")
+
+if __name__ == "__main__":
+    dfs = ShapeDetector()
+
+    tablero = [
+        ['r', 'g', 'b', 'y', 'r', 'r'],
+        ['r', 'r', 'y', 'r', 'g', 'g'],
+        ['r', 'y', 'r', 'g', 'b', 'g'],
+        ['y', 'r', 'g', 'b', 'y', 'g'],
+        ['r', 'b', 'b', 'y', 'r', 'g'],
+        ['g', 'b', 'b', 'r', 'g', 'b']
+    ]
+    dfs.test_shape_fitting(tablero) # aqui tablero

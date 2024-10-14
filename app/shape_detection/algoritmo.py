@@ -1,5 +1,4 @@
 from shapes import SHAPE_TYPES
-from app.shape_detection.DFS import DFS
 
 class ShapeFitChecker:
     def __init__(self):
@@ -18,11 +17,6 @@ class ShapeFitChecker:
 
                 #print("Tuplas disponibles para la fila ", fila, " y columna ", columna, " son: ", tuplas_filtradas)
 
-if __name__ == "__main__":
-    shape_detector = ShapeFitChecker()
-    dfs = DFS()
-    dfs.test_shape_fitting() # aqui tablero
-    
 
     
 
