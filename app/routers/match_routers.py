@@ -101,14 +101,37 @@ async def start_match(match_id: int):
 
         await player_manager.send(json.dumps(message_to_each_player), player_id)
 
+
+@router.get("/matches/{match_id}/start", status_code=status.HTTP_200_OK)
+async def get_match_start_info(match_id: int):
+    repo = MatchRepository()
+    movecard_repo = MoveCardRepository()
+    shapecard_repo = ShapeCardRepository()
+    turns = repo.get_turns(match_id=match_id)
+    board = repo.get_board(match_id=match_id)
+    move_cards_list = {}
+    for player in turns:
+        players_cards = movecard_repo.get_move_cards_by_player(player)
+        move_cards_list[player] = []
+        for card in players_cards:
+            move_cards_list[player].append(card.move_card_type.value)
+    figure_cards_list = {}
+    for player in turns:
+        players_cards = shapecard_repo.get_shape_cards_by_player(player)
+        figure_cards_list[player] = []
+        for card in players_cards:
+            figure_cards_list[player].append(card.shape_card_type.value)
+    return {"turns": turns, "board": board, "move_cards": move_cards_list, "figure_cards": figure_cards_list}
+
+
 # Pasa el turno al siguiente jugador ✓ 
 @router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
 async def pass_turn(match_id):
     repo = MatchRepository()
-    next_player = repo.get_next_player(match_id=match_id)
+    next_player_json = repo.get_next_player(match_id=match_id)
     repo.pass_turn(match_id=match_id)
 
-    message = {"action": "next-turn", "data": {"next_player_name":next_player}}
+    message = {"action": "next-turn", "data": {"next_player_name":next_player_json["username"], "next_player_id": next_player_json["player_id"]}}
     print(f"<> <> <> <> NEXT TURN MESSAGE: {json.dumps(message)}")
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)

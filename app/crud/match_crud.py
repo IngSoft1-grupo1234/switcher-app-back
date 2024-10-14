@@ -292,7 +292,32 @@ class MatchRepository:
             next_player = db.get(PlayerModel, next_player_id)
             if not next_player:
                 raise HTTPException(status_code=404, detail="Next player not found.")
-            return next_player.username if next_player else None
+            return {
+                "username": next_player.username,
+                "player_id": next_player.player_id
+            } if next_player else None
+        finally:
+            db.close()
+    
+    def get_turns(self, match_id):
+        db = session()
+        try:
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            turns = json.loads(match.turns)
+            return turns
+        finally:
+            db.close()
+    
+    def get_board(self, match_id):
+        db = session()
+        try:
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            board = json.loads(match.board)
+            return board
         finally:
             db.close()
     

@@ -97,7 +97,9 @@ class PlayerRepository:
                 db.commit()
 
                 if match.player_count == 1: # si solo queda un jugador, gana, retorno su id
-                    return match.players[0].player_id
+                    winner_player = self.get_player(match.players[0].player_id)
+                    winner_username = winner_player.username
+                    return winner_username
             elif match.host == player.player_id: # se desconecta el host en el lobby, se borra partida
                 player.match_id = None
                 db.delete(match)
