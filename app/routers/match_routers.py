@@ -129,6 +129,12 @@ async def get_match_start_info(match_id: int):
 async def pass_turn(match_id):
     repo = MatchRepository()
     next_player_json = repo.get_next_player(match_id=match_id)
+
+    if next_player_json is None:
+        raise HTTPException(status_code=404, detail="Match not found.")
+    elif not next_player_json:
+        raise HTTPException(status_code=400, detail="No next player available.")
+
     repo.pass_turn(match_id=match_id)
 
     message = {"action": "next-turn", "data": {"next_player_name":next_player_json["username"], "next_player_id": next_player_json["player_id"]}}
