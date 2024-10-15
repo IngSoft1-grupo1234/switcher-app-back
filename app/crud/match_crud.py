@@ -8,6 +8,7 @@ from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.database import session
+from app.shape_detection.DFS import ShapeDetector
 import random
 import json
 
@@ -129,18 +130,23 @@ class MatchRepository:
             player_cards = move_card_repo.get_move_cards_by_player(shuffled_turns[0])
             current_player = next(player for player in match.players if player.player_id == shuffled_turns[0])
             print(f"<THE TURN IS FOR THE PLAYER {shuffled_turns[0]}, KNOWN AS {current_player.username}>")
-            print(f"THE BOARD IS:\n")
-            move_card_repo.pretty_print_board(board)
             print(f"THE PLAYER HAS THE FOLLOWING MOVE CARDS:")
             for cards in player_cards:
                 move_card_type_str = move_card_repo.imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
                 print(f"{cards.move_card_id} - {move_card_type_str}")
+            print(f"THE BOARD IS:\n")
+            move_card_repo.pretty_print_board(board)
+            
             ################################
+
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
 
             db.commit()
             return {
                 "turns": shuffled_turns,
-                "board": board
+                "board": board,
+                "shapes": shapes
             }
         finally:
             db.close()
@@ -238,13 +244,12 @@ class MatchRepository:
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
             
-            board = move_card_repo.confirm_moves(match.current_turn)
-            if not board:
-                print("BOSS THERE'S SOMETHING WRONG!!!!!!!!!!!!!!!!!!!!!!!!")
+            board, shapes = move_card_repo.confirm_moves(match.current_turn)
+
             match.current_turn = next_turn
             
             db.commit()
-            return board
+            return board, shapes
         finally:
             db.close()
 

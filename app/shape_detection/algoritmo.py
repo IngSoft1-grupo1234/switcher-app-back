@@ -1,4 +1,4 @@
-from shapes import SHAPE_TYPES
+from .shapes import SHAPE_TYPES
 
 class ShapeFitChecker:
     def __init__(self):

@@ -8,6 +8,9 @@ from app.models.match_models import Match as MatchModel
 from app.database import session
 from fastapi import HTTPException
 import json
+from app.shape_detection.DFS import ShapeDetector
+
+from app.crud.shapecard_crud import ShapeCardRepository
 
 class MoveCardRepository:
     def create_move_card(self, match_id: int, move_card_type: MoveCardType):
@@ -104,9 +107,6 @@ class MoveCardRepository:
     def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn): # fijarse si es el turno del jugador!!!
         player_cards = self.get_move_cards_by_player(player_id)
         move_card_ids = [card.move_card_id for card in player_cards]
-        print(f"\n\nXxxxxxxxxxxxxxxxxxxxxxxx\n THIS ARE THE IDS SIR: {move_card_ids} \nxxxxxxxxxxxxxxxxxxxxxxxX\n\n")
-        move_card_type = [card.move_card_type for card in player_cards]
-        print(f"\n\nXxxxxxxxxxxxxxxxxxxxxxxx\n THIS ARE THE TYPES SIR: {move_card_type} \nxxxxxxxxxxxxxxxxxxxxxxxX\n\n")
         if move_card_id not in move_card_ids:
             raise HTTPException(status_code=404, detail="Move card not found for this player")
         
@@ -143,7 +143,6 @@ class MoveCardRepository:
             
             # crear lista de cartas usadas
             board = json.loads(match.board)
-            self.pretty_print_board(board)
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
                 board = self.__apply_move_card(
@@ -151,20 +150,34 @@ class MoveCardRepository:
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
-                print(f"\n\n Iteracion {i}:\n")
-                print(f"The card type is {used_card.move_card_type.value}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
-                self.pretty_print_board(board)
+
+
+            # printing   
+            print(f"The LAST card type is {used_card.move_card_type.name}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
+            for cards in player.move_cards:
+                if cards.move_card_id not in used_cards:
+                    move_card_type_str = MoveCardRepository().imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
+                    print(f"{cards.move_card_id} - {move_card_type_str}")
+            self.pretty_print_board(board)
         
         
             db.commit() # si el movimiento no es valido salta excepcion en apply_move_card
-            return board
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
         finally:
             db.close()
     
     def pretty_print_board(self, board: list[list[str]]):
-        for row in board:
-            print(" | ".join(row))
-        print("\n" + "-" * (len(board[0]) * 4 - 1) + "\n")
+        col_coords = "    " + "   ".join([str(i) for i in range(len(board[0]))])
+        print(col_coords)
+        
+        row_separator = "  +" + "---+" * len(board[0])
+        for idx, row in enumerate(board):
+            print(row_separator)
+            print(f"{idx} | " + " | ".join(row) + " |")
+        print(row_separator)
 
     def confirm_moves(self, player_id: int):
         # usada en pass_turn, unassignea las cartas del jugador usadas
@@ -207,7 +220,11 @@ class MoveCardRepository:
             player.used_cards = json.dumps([])
             match.board = json.dumps(board)
             db.commit()
-            return board
+
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
         finally:
             db.close()
         
@@ -216,7 +233,7 @@ class MoveCardRepository:
         db = session()
         try:
             player = db.get(PlayerModel,player_id)
-            if not player.used_cards or player.used_cards == []:
+            if not player.used_cards or json.loads(player.used_cards) == []:
                 raise HTTPException(status_code=404, detail="No move cards used by this player")
             used_cards = json.loads(player.used_cards)
 
@@ -238,7 +255,17 @@ class MoveCardRepository:
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
-            return board
+
+            print(f"The last move (card {last_used_card.move_card_id}) was canceled")
+            for cards in player.move_cards:
+                if cards.move_card_id not in used_cards:
+                    move_card_type_str = MoveCardRepository().imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
+                    print(f"{cards.move_card_id} - {move_card_type_str}")
+            self.pretty_print_board(board)
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
             
         finally:
             db.close()
@@ -257,74 +284,59 @@ class MoveCardRepository:
         return board
 
     def __get_card_movement(self, move_type: int, orientation: str) -> list[int]:
-        # PRECONDICION { move_type y orientation son validos }
         # devuelve los numeros a sumar a las cordenadas del board
-        if orientation not in ["up","down","left","right"]:
+        if orientation not in ["up", "down", "left", "right"]:
             raise HTTPException(status_code=400, detail="Invalid orientation")
-        match move_type:
-            case 1:
-                # diagonal saltando una casilla
-                movements = {
-                    "up": [-2,2],
-                    "down": [2,-2],
-                    "left": [-2,-2],
-                    "right": [2,2]
-                }
-                return movements[orientation]
-            case 2:
-                # recto saltando una casilla
-                movements = {
-                    "up": [-2,0],
-                    "down": [2,0],
-                    "left": [0,-2],
-                    "right": [0,2]
-                }
-                return movements[orientation]
-            case 3:
-                # recto sin saltar casilla
-                movements = {
-                    "up": [-1,0],
-                    "down": [1,0],
-                    "left": [0,-1],
-                    "right": [0,1]
-                }
-                return movements[orientation]
-            case 4:
-                # diagonal sin saltar casilla
-                movements = {
-                    "up": [-1,1],
-                    "down": [1,-1],
-                    "left": [-1,-1],
-                    "right": [1,1]
-                }
-                return movements[orientation]
-            case 5:
-                # L reversa
-                movements = {
-                    "up": [-2,1],
-                    "down": [2,-1],
-                    "left": [-1,-2],
-                    "right": [1,2]
-                }
-                return movements[orientation]
-            case 6:
-                # L
-                movements = {
-                    "up": [-2,-1],
-                    "down": [2,1],
-                    "left": [-1,2],
-                    "right": [1,-2]
-                }
-                return movements[orientation]
-            case 7:
-                # recto saltando cuatro casillas
-                movements = {
-                    "up": [-4,0],
-                    "down": [4,0],
-                    "left": [0,-4],
-                    "right": [0,4]
-                }
-                return movements[orientation]
+        
+        movements = {
+            1: { # diagonal salto una casilla
+                "up": [-2, 2],
+                "down": [2, -2],
+                "left": [-2, -2],
+                "right": [2, 2]
+            },
+            2: { # recto salto una casilla
+                "up": [-2, 0],
+                "down": [2, 0],
+                "left": [0, -2],
+                "right": [0, 2]
+            },
+            3: { # recto sin salto
+                "up": [-1, 0],
+                "down": [1, 0],
+                "left": [0, -1],
+                "right": [0, 1]
+            },
+            4: { # diagonal sin salto
+                "up": [-1, 1],
+                "down": [1, -1],
+                "left": [-1, -1],
+                "right": [1, 1]
+            },
+            5: { # L invertida
+                "up": [-2, 1],
+                "down": [2, -1],
+                "left": [-1, -2],
+                "right": [1, 2]
+            },
+            6: { # L
+                "up": [-2, -1],
+                "down": [2, 1],
+                "left": [1, -2],
+                "right": [-1, 2]
+            },
+            7: { # recto salto cuatro casillas
+                "up": [-4, 0],
+                "down": [4, 0],
+                "left": [0, -4],
+                "right": [0, 4]
+            }
+        }
+        
+        if move_type not in movements:
+            raise HTTPException(status_code=400, detail="Invalid move type")
+        
+        return movements[move_type][orientation]
         
     def imprimir_tipo_de_movimiento(self, tipo_de_movimiento: int):
         movimientos = {

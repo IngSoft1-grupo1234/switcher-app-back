@@ -1,5 +1,5 @@
-from algoritmo import ShapeFitChecker
-from shapes import SHAPE_TYPES
+from .algoritmo import ShapeFitChecker
+from .shapes import SHAPE_TYPES
 import random
 
 class ShapeDetector:
@@ -48,58 +48,38 @@ class ShapeDetector:
         sf = ShapeFitChecker()
         formas_disponibles = sf.formas_disponibles
 
-        iteration_count = 0
-        shape_count = 0
+        result = {}
+
+        key = 1
 
         for i, (color, group) in enumerate(color_groups):
-            if len(group) < 3:
+            if len(group) < 3 or len(group) > 5:
                 continue
             sorted_group = sorted(group, key=lambda x: x[1])
+            # print(f"sorted  group: {sorted_group}, color: {color_name[color]}")
             row, col = sorted_group[0]
             for keys in formas_disponibles[col][row]:
                 for shapes in SHAPE_TYPES[keys]:
-                    iteration_count += 1
                     var = SHAPE_TYPES[keys][shapes](row, col)
                     if len(var) == len(group) and sorted(group) == sorted(var):
-                        shape_count += 1
-                        print(f"THERE IS A {color_name[color]} {shapes} IN THE BOARD")
-                        break  # Si encuentra figura rompe el loop
+                        result[key] = {
+                            'color': color,
+                            'shape': shapes,
+                            'positions': var
+                        }
+                        key += 1
+                        #print(f"THERE IS A {color_name[color]} {shapes} IN THE BOARD")
+                        break  
                 else:
-                    continue  # continua el loop grande si no se rompe el loop chiquito
-                break  # si se rompe el chiquito entra aca y rompe el grande
-        # print(f"Total number of iterations: {iteration_count}")
-        # print(f"Total number of shapes found: {shape_count}")
-        return iteration_count
-
-if __name__ == "__main__":
-    dfs = ShapeDetector()
-
-    tablero = [
-        ['r', 'g', 'b', 'y', 'r', 'r'],
-        ['r', 'r', 'y', 'r', 'r', 'g'],
-        ['r', 'y', 'r', 'g', 'g', 'g'],
-        ['y', 'b', 'g', 'b', 'y', 'g'],
-        ['r', 'b', 'b', 'r', 'y', 'r'],
-        ['g', 'r', 'b', 'y', 'y', 'b']
-    ]
-
-    dfs.test_shape_fitting(tablero)
-
-    """ def generate_random_board(rows, cols, colors):
-        return [[random.choice(colors) for _ in range(cols)] for _ in range(rows)]
-
-    # Generate a random board
-    rows, cols = 6, 6
-    colors = ['r', 'g', 'b', 'y']
-    tablero = generate_random_board(rows, cols, colors)
-    dfs.test_shape_fitting(tablero) # aqui tablero
-
-    total_iterations = 0
-    num_tests = 1000
-
-    for _ in range(num_tests):
-        tablero = generate_random_board(rows, cols, colors)
-        total_iterations += dfs.test_shape_fitting(tablero)
-
-    average_iterations = total_iterations / num_tests
-    print(f"Average number of iterations over {num_tests} tests: {average_iterations}") """
+                    continue  
+                break  
+        return result
+    
+    def pretty_print_result(self, shapes):
+        print("\n\n" + "="*30 + "  SHAPES DETECTED  " + "="*31)
+        for shape in shapes:
+            print(f"Color: {shapes[shape]['color']}")
+            print(f"Shape Type: {shapes[shape]['shape']}")
+            print(f"Coordinates: {shapes[shape]['positions']}")
+            print("-"*70)
+        print("="*80 + "\n\n")

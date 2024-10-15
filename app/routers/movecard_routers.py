@@ -25,27 +25,27 @@ async def get_move_cards_by_player(player_id: int):
 @router.put("/players/{player_id}/move_cards/{move_card_id}/use",status_code=status.HTTP_204_NO_CONTENT)
 async def soft_move(player_id: int, move_card_id: int, movement_info: MoveCardIn):
     move_card_repo = MoveCardRepository()
-    updated_board = move_card_repo.soft_move(player_id, move_card_id, movement_info)    
+    updated_board, shapes = move_card_repo.soft_move(player_id, move_card_id, movement_info)    
 
     repo = MatchRepository()
     player_repo = PlayerRepository()
     match_id = player_repo.get_player(player_id).match_id
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
-    message = {"action": "update-board", "data": {"board": updated_board}}
+    message = {"action": "update-board", "data": {"board": updated_board, "shapes": shapes}}
     print(f"SOFT_MOVE_WEBSOCKET: {message}")
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
 
-# Endpoint para cancelar movimiento suave
+# Endpoint para cancelar movimiento parcial
 @router.put("/players/{player_id}/move_cards/cancel",status_code=status.HTTP_204_NO_CONTENT)
 async def cancel_soft_move(player_id: int):
     move_card_repo = MoveCardRepository()
-    updated_board = move_card_repo.cancel_soft_move(player_id)
+    updated_board, shapes = move_card_repo.cancel_soft_move(player_id)
 
     repo = MatchRepository()
     player_repo = PlayerRepository()
     match_id = player_repo.get_player(player_id).match_id
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
-    message = {"action": "update-board", "data": {"board": updated_board}}
+    message = {"action": "update-board", "data": {"board": updated_board, "shapes": shapes}}
     print(f"CANCEL_MOVE_WEBSOCKET: {message}")
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
     

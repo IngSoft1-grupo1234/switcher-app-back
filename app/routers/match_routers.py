@@ -62,6 +62,7 @@ async def start_match(match_id: int):
 
     turns = information_to_send["turns"]
     board = information_to_send["board"]
+    shapes = information_to_send["shapes"]
 
     move_cards_list = {}
     for player in turns:
@@ -80,17 +81,20 @@ async def start_match(match_id: int):
             figure_cards_list[player].append(card.shape_card_type.value)
     # print(f"FIGURE CARDS LIST 1: {figure_cards_list}\n")
     
-    message = {
+    message_broadcast = {
                 "action": "start-game",
                 "data": 
                     {
                         "turns": turns,
                         "board": board,
-                        "figure_cards": figure_cards_list
+                        "figure_cards": figure_cards_list,
+                        "shapes": shapes
                     }
               }
+    
+    print(f"START GAME MESSAGE: {json.dumps(message_broadcast)}")
 
-    await player_manager.broadcast_to_id_list(json.dumps(message), turns)
+    await player_manager.broadcast_to_id_list(json.dumps(message_broadcast), turns)
     for player_id in turns:
         message_to_each_player = {
         "action": "start-game-card-information",
@@ -111,14 +115,14 @@ async def pass_turn(match_id):
     # habria que usar como player id al websocket de alguna manera, pero habria que cambiar todo el proyecto literalmente
     repo = MatchRepository()
     next_player = repo.get_next_player(match_id=match_id)
-    updated_board = repo.pass_turn(match_id=match_id)
+    updated_board, shapes = repo.pass_turn(match_id=match_id)
 
     message = {"action": "next-turn", "data": {"next_player_name":next_player}}
     print(f"<> <> <> <> NEXT TURN MESSAGE: {json.dumps(message)}")
     ids_from_match = repo.get_player_ids_in_match(match_id=match_id)
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
 
-    board_message = {"action": "update-board", "data": {"board": updated_board}}
+    board_message = {"action": "update-board", "data": {"board": updated_board, "shapes": shapes}}
     print(f"NEXT TURN BOARD MESSAGE: {board_message}")
     await player_manager.broadcast_to_id_list(json.dumps(board_message), ids_from_match)
 

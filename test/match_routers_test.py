@@ -100,7 +100,8 @@ start_match_return_value = {
                ["r", "r", "r", "r", "r", "r"],
                ["r", "r", "r", "r", "r", "r"],
                ["r", "r", "r", "r", "r", "r"],
-               ["r", "r", "r", "r", "r", "r"]]
+               ["r", "r", "r", "r", "r", "r"]],
+    "shapes" : {}
 }
 def test_start_match():
     match_id = 1
@@ -130,12 +131,23 @@ def test_start_match_not_found():
         assert exc_info.value.detail == "Match not found."
 
 
+b = [
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"]
+]
+
+s = {}
+
 def test_pass_turn():
     expected_response = {
         "next_player_name": "Player2"
     }
     with patch.object(MatchRepository, 'get_next_player', return_value="Player2"),\
-            patch.object(MatchRepository, 'pass_turn', return_value=None),\
+            patch.object(MatchRepository, 'pass_turn', return_value=(b,s)),\
             patch.object(MatchRepository, 'get_player_ids_in_match', return_value=[1, 2]):
         response = client.put("/matches/1/next_turn")
         assert response.status_code == 204
@@ -143,7 +155,7 @@ def test_pass_turn():
 
 
 def test_pass_turn_match_not_found():
-    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=None):
+    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=(b,s)):
         with patch('app.crud.match_crud.MatchRepository.get_next_player', return_value=None):
             with pytest.raises(HTTPException) as exc_info:
                 client.put("/matches/999/next_turn")
@@ -153,7 +165,7 @@ def test_pass_turn_match_not_found():
 
 
 def test_pass_turn_no_next_player():
-    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=None):
+    with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=(b,s)):
         with patch('app.crud.match_crud.MatchRepository.get_next_player', return_value=None),\
                 patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]):
             response = client.put("/matches/1/next_turn")
