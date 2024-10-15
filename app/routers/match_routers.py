@@ -80,7 +80,10 @@ async def start_match(match_id: int):
             figure_cards_list[player].append(card.shape_card_type.value)
     print(f"FIGURE CARDS LIST 1: {figure_cards_list}\n")
     
-    message = {
+    lobby_message = {"action": "start-game-lobby","data": match_id}
+    await player_manager.broadcast(json.dumps(lobby_message))
+
+    game_message = {
                 "action": "start-game",
                 "data": 
                     {
@@ -89,8 +92,8 @@ async def start_match(match_id: int):
                         "figure_cards": figure_cards_list
                     }
               }
-
-    await player_manager.broadcast_to_id_list(json.dumps(message), turns)
+    await player_manager.broadcast_to_id_list(json.dumps(game_message), turns)
+    
     for player_id in turns:
         message_to_each_player = {
         "action": "start-game-card-information",

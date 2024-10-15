@@ -53,10 +53,6 @@ async def unassign_match_to_player(player_id: int):
     print(f"EXIT MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
 
-    
-    print(f"EXIT MESSAGE: {message}")
-    await player_manager.broadcast(json.dumps(message))
-
 @router.delete("/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_player(player_id: int):
     repo = PlayerRepository()
