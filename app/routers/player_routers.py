@@ -59,3 +59,14 @@ async def unassign_match_to_player(player_id: int):
 async def delete_player(player_id: int):
     repo = PlayerRepository()
     repo.delete_player(player_id=player_id)
+
+@router.put("/players/use_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def use_shape_card(shape_card_id: int):
+    repo_player = PlayerRepository()
+    repo_shape_card = ShapeCardRepository()
+    repo_player.use_shape_card(shape_card_id=shape_card_id)
+    shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
+
+
+    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type}}
+    await player_manager.broadcast(json.dumps(message))

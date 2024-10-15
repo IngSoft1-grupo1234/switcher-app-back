@@ -125,3 +125,19 @@ class PlayerRepository:
             db.commit()
         finally:
             db.close()
+    
+    def use_shape_card(self, shape_card_id):
+        try:
+            db = session()
+            shape_card = db.get(ShapeCardModel, shape_card_id)
+            if not shape_card:
+                raise HTTPException(status_code=404, detail="Shape card not found.")
+            player = db.get(PlayerModel, shape_card.player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            shape_card.is_active = False
+            shape_card.player_id = None
+            db.delete(shape_card)
+            db.commit()
+        finally:
+            db.close()

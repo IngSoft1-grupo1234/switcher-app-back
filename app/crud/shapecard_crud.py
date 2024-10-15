@@ -31,6 +31,16 @@ class ShapeCardRepository:
         finally:
             db.close()
     
+    def get_shape_card(self, shape_card_id: int) -> ShapeCardModel:
+        db = session()
+        try:
+            shape_card = db.get(ShapeCardModel, shape_card_id)
+            if not shape_card:
+                raise HTTPException(status_code=404, detail="Shape card not found")
+            return shape_card
+        finally:
+            db.close()
+    
 
     def get_easy_shape_cards_ids_unassigned(self) -> list[ShapeCardModel]:
         db = session()

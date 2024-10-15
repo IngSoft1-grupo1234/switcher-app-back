@@ -132,3 +132,15 @@ def test_delete_player(mock_session, player_repo):
     mock_db.get.assert_called_once_with(PlayerModel, 1)
 
     mock_db.commit.assert_called_once()
+
+
+def test_use_shape_card(mock_session, player_repo):
+    mock_db = mock_session.return_value
+    mock_db.get.return_value = PlayerModel(player_id=1)
+    mock_db.commit = MagicMock()
+    mock_db.close = MagicMock()
+
+    player_repo.use_shape_card(1)
+
+    mock_db.commit.assert_called_once()
+    mock_db.close.assert_called_once()
