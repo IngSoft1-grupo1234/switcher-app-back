@@ -5,6 +5,8 @@ import random
 class ShapeDetector:
     def __init__(self):
         self.directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        self.iterations = 0
+        self.comparations = 0
 
     def dfs(self, board, visited, row, col, color):
         stack = [(row, col)]
@@ -17,11 +19,14 @@ class ShapeDetector:
                 group.append((r, c))
         
                 # Chequea vecinos
+                # se podria crear una lista con los movimientos posibles por casilla
+                # y reducir iteraciones :nerd: :mano_para_arriba:
                 for dr, dc in self.directions:
                     new_r, new_c = r + dr, c + dc
                     if 0 <= new_r < len(board) and 0 <= new_c < len(board[0]):
                         if not visited[new_r][new_c] and board[new_r][new_c] == color:
                             stack.append((new_r, new_c))
+                            self.iterations += 1
         
         return group
 
