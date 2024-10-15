@@ -64,52 +64,76 @@ class PlayerRepository:
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
+
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
             if player.match_id is None:
                 raise HTTPException(status_code=400, detail="Player is not assigned to any match.")
+
             match = db.get(MatchModel, player.match_id)
-            if player.match_id is None:
-                raise HTTPException(status_code=400, detail="Player is not assigned to any match.")
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            
-            # desasignar cartas movimiento del jugador
-            for move_cards in player.move_cards:
-                move_cards.is_active = False
-                move_cards.player_id = None
-                
-
-            # desasignar cartas figura del jugador
-            for shape_cards in player.shape_cards:
-                shape_cards.is_active = False
-                shape_cards.player_id = None
-                
-
-            if match.has_begun: # desconectarse midgame, no pasa nada
-                player.match_id = None
-                match.player_count -= 1
+            # unassign player from match already started
+            if match.has_begun:
+                # update match's turns 
                 turns = json.loads(match.turns)
-                if player_id in turns:
-                    turns.remove(player_id)
+                if not player_id in turns:
+                    raise HTTPException(status_code=400, detail="Player is not in turns.")    
+                turns.remove(player_id)
                 match.turns = json.dumps(turns)
-                
-                db.commit()
-
-                if match.player_count == 1: # si solo queda un jugador, gana, retorno su id
+                # update match's moves
+                moves = db.query(MoveCardModel).filter(MoveCardModel.player_id == player.player_id).all()
+                if not moves:
+                    raise HTTPException(status_code=400, detail="Player has no moves.")
+                for move in moves:
+                    move.is_active = False
+                    move.player_id = None
+                # update match's shapes
+                shapes = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player.player_id).all()
+                if not shapes:
+                    raise HTTPException(status_code=400, detail="Player has no shapes.")
+                for shape in shapes:
+                    delete_shape = db.get(ShapeCardModel, shape.shape_card_id)
+                    db.delete(delete_shape)
+                player.match_id = None
+                player.move_cards = []
+                player.shape_cards = []
+                # clean up match's attributes
+                match.player_count -= 1
+                # check if player is the winner
+                if match.player_count == 1:
                     winner_player = self.get_player(match.players[0].player_id)
                     winner_username = winner_player.username
                     winner_player_id = winner_player.player_id
+
+                    # remove all moves from match
+                    moves = db.query(MoveCardModel).filter(MoveCardModel.match_id == match.match_id).all()
+                    if not moves:
+                        raise HTTPException(status_code=400, detail="Player has no moves.")
+                    for move in moves:
+                        delete_move = db.get(MoveCardModel, move.move_card_id)
+                        db.delete(delete_move)
+                    # remove all shapes from player
+                    shapes = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == winner_player.player_id).all()
+                    if not shapes:
+                        raise HTTPException(status_code=400, detail="Player has no shapes.")
+                    for shape in shapes:
+                        delete_shape = db.get(ShapeCardModel, shape.shape_card_id)
+                        db.delete(delete_shape)
+                    winner_player.match_id = None
+                    db.delete(match)
+                    db.commit()
                     return {"winner_username": winner_username, "winner_player_id": winner_player_id}
-                
-            elif match.host == player.player_id: # se desconecta el host en el lobby, se borra partida
+            # cancel match not started
+            elif match.host == player.player_id:
                 player.match_id = None
                 db.delete(match)
-                db.commit()
+            # disconnect player from match not started
             else:
-                player.match_id = None # se desconecta jugador en el lobby, no pasa nada
+                player.match_id = None
                 match.player_count -= 1
-                db.commit()
+            
+            db.commit()
         finally:
             db.close()
     
