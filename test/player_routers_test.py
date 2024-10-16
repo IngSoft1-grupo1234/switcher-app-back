@@ -85,7 +85,8 @@ def test_unassign_match_to_player_not_found(mock_session):
     mock_db = mock_session.return_value
     mock_db.close = MagicMock()
     
-    with patch('app.crud.player_crud.PlayerRepository.get_player', side_effect=HTTPException(status_code=404, detail="Player not found.")):
+    with patch('app.crud.player_crud.PlayerRepository.get_player', side_effect=HTTPException(status_code=404, detail="Player not found.")),\
+            patch.object(PlayerRepository, 'unassign_match_to_player', return_value=None):
         with pytest.raises(HTTPException) as exc_info:
             response = client.put("/players/999/UnassignMatch")
             assert response.status_code == 404
