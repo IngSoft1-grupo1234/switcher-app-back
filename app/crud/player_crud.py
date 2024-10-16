@@ -88,6 +88,8 @@ class PlayerRepository:
                 for move in moves:
                     move.is_active = False
                     move.player_id = None
+                    move.last_used_orientation = None
+                    move.last_used_position = None
                 # update match's shapes
                 shapes = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player.player_id).all()
                 if not shapes:

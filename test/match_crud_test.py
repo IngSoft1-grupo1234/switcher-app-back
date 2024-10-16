@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from app.crud.match_crud import MatchRepository
+from app.crud.movecard_crud import MoveCardRepository
 from app.models.match_models import Match as MatchModel
 from app.models.player_models import Player as PlayerModel
 from app.models.movecard_models import MoveCard as MoveCardModel
@@ -13,6 +14,11 @@ import json
 def mock_session():
     with patch('app.crud.match_crud.session', autospec=True) as mock_session:
         yield mock_session
+
+@pytest.fixture
+def player_mock_session():
+    with patch('app.crud.movecard_crud.session', autospec=True) as movecard_mock_session:
+        yield movecard_mock_session
 
 @pytest.fixture
 def match_repo(mock_session):
@@ -147,21 +153,36 @@ def test_set_player_count(match_repo, mock_session):
     mock_db.commit.assert_called_once()
 
 
+pass_turn_return_board = [
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"]
+]
 
-def test_pass_turn(match_repo, mock_session):
+pass_turn_return_shapes = {}
+
+def test_pass_turn(match_repo, mock_session, player_mock_session):
     mock_db = mock_session.return_value
-    mock_match = MatchModel(match_id=1, match_name="Match1", max_players=4, host="Host1", player_count=2, current_turn=1, has_begun=True, players=[
-        PlayerModel(player_id=1, username="Player1"),
-        PlayerModel(player_id=2, username="Player2")
+    mock_match = MatchModel(match_id=1, match_name="Match1", max_players=4, host="1", player_count=2, current_turn=1, has_begun=True, players=[
+        PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([])),
+        PlayerModel(player_id=2, username="Player2", match_id = 1, used_cards = json.dumps([]))
     ],  turns=json.dumps([1, 2]))
     mock_db.query.return_value.get.return_value = mock_match
+    mock_db.get.return_value = mock_match
+
 
     with patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]) as mock_get_players_id,\
         patch('app.crud.shapecard_crud.ShapeCardRepository.get_amount_of_shape_cards_by_player', return_value=3) as mock_get_amount_of_active_shape_cards,\
         patch('app.crud.movecard_crud.MoveCardRepository.get_amount_of_move_cards_by_player', return_value=3) as mock_get_move_cards_id:
+        player_mock_db = player_mock_session.return_value
+    player_mock_db.get.return_value = PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]))
+    with patch('app.crud.movecard_crud.MoveCardRepository.confirm_moves', return_value=(pass_turn_return_board, pass_turn_return_shapes)):
         result = match_repo.pass_turn(1)
 
-    assert result == None
+    assert result == (pass_turn_return_board, pass_turn_return_shapes)
     assert mock_match.current_turn == 1
     mock_db.commit.assert_called_once()
 

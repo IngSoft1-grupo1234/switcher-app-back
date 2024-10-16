@@ -1,12 +1,16 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.movecard_models import MoveCard as MoveCardModel
+from app.schemas.movecard_schemas import MoveCardIn
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.models.match_models import Match as MatchModel
-from app.crud.player_crud import PlayerRepository
 from app.database import session
 from fastapi import HTTPException
+import json
+from app.shape_detection.DFS import ShapeDetector
+
+from app.crud.shapecard_crud import ShapeCardRepository
 
 class MoveCardRepository:
     def create_move_card(self, match_id: int, move_card_type: MoveCardType):
@@ -49,7 +53,6 @@ class MoveCardRepository:
     def assign_move_card_to_player(self, move_card_id: int, player_id: int):
         db = session()
         try:
-            player_repo = PlayerRepository()
             player = db.get(PlayerModel,player_id)
             move_card = db.get(MoveCardModel,move_card_id)
 
@@ -100,6 +103,253 @@ class MoveCardRepository:
             return move_cards
         finally:
             db.close()
+    
+    def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn): # fijarse si es el turno del jugador!!!
+        player_cards = self.get_move_cards_by_player(player_id)
+        move_card_ids = [card.move_card_id for card in player_cards]
+        if move_card_id not in move_card_ids:
+            raise HTTPException(status_code=404, detail="Move card not found for this player")
+        
+        db = session()
+        try:
+            player = db.get(PlayerModel,player_id)
+            match = db.get(MatchModel,player.match_id)
+            card = db.get(MoveCardModel,move_card_id)
+
+            if not player or not match or not card:
+                raise HTTPException(status_code=404, detail="Something not found")
+            if player.matches.current_turn != player_id:
+                raise HTTPException(status_code=400, detail="Not player's turn")
+
+            # añadir carta a lista cartas usadas, crea la lista si no existe (modularizar?)
+            
+            if not player.used_cards:
+                used_cards = []
+            else:
+                used_cards = json.loads(player.used_cards)
+            if card.move_card_id in used_cards:
+                raise HTTPException(status_code=400, detail="Move card already used")
+            used_cards.append(card.move_card_id)
+
+            # Valida movimiento
+            board = json.loads(match.board)
+            self.__apply_move_card(card.move_card_type.value, board, movement_info.orientation, json.loads(movement_info.position))
+
+            # actualizacion en database
+            player.used_cards = json.dumps(used_cards)
+            card.last_used_orientation = movement_info.orientation
+            card.last_used_position = movement_info.position
+            db.commit()
+            
+            # crear lista de cartas usadas
+            board = json.loads(match.board)
+            for i in range(len(used_cards)):
+                used_card = db.get(MoveCardModel,used_cards[i])
+                board = self.__apply_move_card(
+                    used_card.move_card_type.value, 
+                    board, used_card.last_used_orientation, 
+                    json.loads(used_card.last_used_position)
+                )
+
+
+            # printing   
+            print(f"The LAST card type is {used_card.move_card_type.name}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
+            for cards in player.move_cards:
+                if cards.move_card_id not in used_cards:
+                    move_card_type_str = MoveCardRepository().imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
+                    print(f"{cards.move_card_id} - {move_card_type_str}")
+            self.pretty_print_board(board)
+        
+        
+            db.commit() # si el movimiento no es valido salta excepcion en apply_move_card
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
+        finally:
+            db.close()
+    
+    def pretty_print_board(self, board: list[list[str]]):
+        col_coords = "    " + "   ".join([str(i) for i in range(len(board[0]))])
+        print(col_coords)
+        
+        row_separator = "  +" + "---+" * len(board[0])
+        for idx, row in enumerate(board):
+            print(row_separator)
+            print(f"{idx} | " + " | ".join(row) + " |")
+        print(row_separator)
+
+    def confirm_moves(self, player_id: int):
+        # usada en pass_turn, unassignea las cartas del jugador usadas
+        db = session()
+        try:
+            player = db.get(PlayerModel,player_id)
+            match = db.get(MatchModel,player.match_id)
+            if not player or not match:
+                raise HTTPException(status_code=404, detail="Something not found")
+            
+
+            used_cards = json.loads(player.used_cards)
+            if not used_cards or used_cards == []:
+                return # match_crud pass_turn la usa. si hay una excepcion aqui caga el pasar turno
+                raise HTTPException(status_code=404, detail="No move cards used by this player")
+            
+            # MODULARIZAR ESTO POR DIOS
+            board = json.loads(match.board)
+            self.pretty_print_board(board)
+            
+            for i in range(len(used_cards)):
+                used_card = db.get(MoveCardModel,used_cards[i])
+                board = self.__apply_move_card(
+                    used_card.move_card_type.value, 
+                    board, used_card.last_used_orientation, 
+                    json.loads(used_card.last_used_position)
+                )
+                print(f"\n\n Iteracion {i}:\n")
+                print(f"The card type is {used_card.move_card_type.value}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
+                self.pretty_print_board(board)
+
+            # ELIMINAR CARTAS USADAS
+            for card_id in used_cards:
+                card = db.get(MoveCardModel,card_id)
+                card.is_active = False
+                card.player_id = None
+                if card in player.move_cards:
+                    player.move_cards.remove(card)
+
+            player.used_cards = json.dumps([])
+            match.board = json.dumps(board)
+            db.commit()
+
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
+        finally:
+            db.close()
+        
+
+    def cancel_soft_move(self, player_id: int):
+        db = session()
+        try:
+            player = db.get(PlayerModel,player_id)
+            if not player.used_cards or json.loads(player.used_cards) == []:
+                raise HTTPException(status_code=404, detail="No move cards used by this player")
+            used_cards = json.loads(player.used_cards)
+
+            # la ultima carta usada
+            last_used_card_id = used_cards[-1]
+            last_used_card = next(card for card in player.move_cards if card.move_card_id == last_used_card_id)
+            last_used_card.last_used_orientation = None
+            last_used_card.last_used_position = None
+            #########################
+            used_cards.pop()
+            player.used_cards = json.dumps(used_cards)
+            db.commit()
+
+            board = json.loads(player.matches.board)
+            for i in range(len(used_cards)):
+                used_card = db.get(MoveCardModel,used_cards[i])
+                board = self.__apply_move_card(
+                    used_card.move_card_type.value, 
+                    board, used_card.last_used_orientation, 
+                    json.loads(used_card.last_used_position)
+                )
+
+            print(f"The last move (card {last_used_card.move_card_id}) was canceled")
+            for cards in player.move_cards:
+                if cards.move_card_id not in used_cards:
+                    move_card_type_str = MoveCardRepository().imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
+                    print(f"{cards.move_card_id} - {move_card_type_str}")
+            self.pretty_print_board(board)
+            shapes = ShapeDetector().test_shape_fitting(board)
+            ShapeDetector().pretty_print_result(shapes)
+
+            return board, shapes
+            
+        finally:
+            db.close()
+        
+    
+    def __apply_move_card(self, move_type: int, board: list[list[str]], orientation: str, position: list[int]) -> list[list[str]]:
+        movement = self.__get_card_movement(move_type, orientation)
+        x = position[0]
+        y = position[1]
+        new_x = x + movement[0]
+        new_y = y + movement[1]
+        if 0 <= new_x < len(board) and 0 <= new_y < len(board[0]):
+            board[x][y], board[new_x][new_y] = board[new_x][new_y], board[x][y]
+        else:
+            raise HTTPException(status_code=400, detail="Invalid move")
+        return board
+
+    def __get_card_movement(self, move_type: int, orientation: str) -> list[int]:
+        # devuelve los numeros a sumar a las cordenadas del board
+        if orientation not in ["up", "down", "left", "right"]:
+            raise HTTPException(status_code=400, detail="Invalid orientation")
+        
+        movements = {
+            1: { # diagonal salto una casilla
+                "up": [-2, 2],
+                "down": [2, -2],
+                "left": [-2, -2],
+                "right": [2, 2]
+            },
+            2: { # recto salto una casilla
+                "up": [-2, 0],
+                "down": [2, 0],
+                "left": [0, -2],
+                "right": [0, 2]
+            },
+            3: { # recto sin salto
+                "up": [-1, 0],
+                "down": [1, 0],
+                "left": [0, -1],
+                "right": [0, 1]
+            },
+            4: { # diagonal sin salto
+                "up": [-1, 1],
+                "down": [1, -1],
+                "left": [-1, -1],
+                "right": [1, 1]
+            },
+            5: { # L invertida
+                "up": [-2, 1],
+                "down": [2, -1],
+                "left": [-1, -2],
+                "right": [1, 2]
+            },
+            6: { # L
+                "up": [-2, -1],
+                "down": [2, 1],
+                "left": [1, -2],
+                "right": [-1, 2]
+            },
+            7: { # recto salto cuatro casillas
+                "up": [-4, 0],
+                "down": [4, 0],
+                "left": [0, -4],
+                "right": [0, 4]
+            }
+        }
+        
+        if move_type not in movements:
+            raise HTTPException(status_code=400, detail="Invalid move type")
+        
+        return movements[move_type][orientation]
+        
+    def imprimir_tipo_de_movimiento(self, tipo_de_movimiento: int):
+        movimientos = {
+            1: "Salto diagonal de una casilla",
+            2: "Salto recto de una casilla",
+            3: "Recto sin saltar",
+            4: "Diagonal sin saltar",
+            5: "L invertida",
+            6: "L",
+            7: "Salto recto de cuatro casillas"
+        }
+        descripcion_movimiento = movimientos.get(tipo_de_movimiento, "Tipo de movimiento inválido")
+        return f"Tipo: {descripcion_movimiento}"
     
     # futuro para terminar turno 
     def get_amount_of_move_cards_by_player(self, player_id: int) -> int:
