@@ -247,5 +247,74 @@ def test_get_shape_cards_by_player_no_shape_cards_found(mock_session, shape_card
     assert excinfo.value.status_code == 404
     assert excinfo.value.detail == "No shape cards actives found for this player"
 
+def test_get_shape_card(mock_session, shape_card_repo):
+    mock_db = mock_session.return_value
+    mock_shape_card = ShapeCardModel(shape_card_id=1, shape_card_type=ShapeCardType.SHAPE1)
+    mock_db.get.return_value = mock_shape_card
+    mock_db.close = MagicMock()
+
+    shape_card = shape_card_repo.get_shape_card(1)
+
+    mock_db.get.assert_called_once_with(ShapeCardModel, 1)
+    mock_db.close.assert_called_once()
+    assert shape_card.shape_card_type == ShapeCardType.SHAPE1
+    assert shape_card.shape_card_id == 1
+
+
+def test_get_shape_card_not_found(mock_session, shape_card_repo):
+    mock_db = mock_session.return_value
+    mock_db.get.return_value = None
+    mock_db.close = MagicMock()
+
+    with pytest.raises(HTTPException) as exc_info:
+        shape_card_repo.get_shape_card(1)
+
+    mock_db.get.assert_called_once_with(ShapeCardModel, 1)
+    mock_db.close.assert_called_once()
+    assert exc_info.value.detail == "Shape card not found"
+
+
+def test_get_shape_cards_ids_inactive(mock_session, shape_card_repo):
+    mock_db = mock_session.return_value
+    mock_db.query.return_value.filter.return_value.all.return_value = [(1,), (2,)]
+    mock_db.close = MagicMock()
+
+    shape_card_ids = shape_card_repo.get_shape_cards_ids_inactive(1)
+
+    mock_db.query.assert_called_once()
+    mock_db.close.assert_called_once()
+    assert shape_card_ids == [1, 2]
+
+def test_get_amount_of_shape_cards_by_player(mock_session, shape_card_repo):
+    mock_db = mock_session.return_value
+    
+    mock_db.get.return_value = PlayerModel(player_id=1)
+
+    mock_db.query.return_value.filter.return_value.count.return_value = 3
+
+    mock_db.close = MagicMock()
+
+    shape_card_count = shape_card_repo.get_amount_of_shape_cards_by_player(1)
+
+    mock_db.get.assert_called_once_with(PlayerModel, 1)
+    mock_db.query.assert_called_once()
+    mock_db.close.assert_called_once()
+    assert shape_card_count == 3 
+
+def test_get_amount_of_shape_cards_by_player_player_not_found(mock_session, shape_card_repo):
+    mock_db = mock_session.return_value
+    
+    mock_db.get.return_value = None
+
+    mock_db.close = MagicMock()
+
+    try:
+        shape_card_repo.get_amount_of_shape_cards_by_player(999)
+    except HTTPException as e:
+        assert e.status_code == 404
+        assert e.detail == "Player not found"
+
+    mock_db.get.assert_called_once_with(PlayerModel, 999)
+    mock_db.close.assert_called_once()
 
     

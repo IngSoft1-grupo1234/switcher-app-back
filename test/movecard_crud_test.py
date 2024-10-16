@@ -290,5 +290,30 @@ def test_get_move_cards_by_player_no_move_cards_found(mock_session, move_card_re
     assert excinfo.value.status_code == 404
     assert excinfo.value.detail == "No move cards found for this player"
 
+def test_get_amount_of_move_cards_by_player(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+    mock_db.get.return_value = PlayerModel(player_id=1)
+    mock_db.query.return_value.filter.return_value.count.return_value = 5
+    mock_db.close = MagicMock()
 
+    move_card_count = move_card_repo.get_amount_of_move_cards_by_player(1)
+
+    mock_db.get.assert_called_once_with(PlayerModel, 1)
+    mock_db.query.assert_called_once()
+    mock_db.close.assert_called_once()
+    assert move_card_count == 5
+
+def test_get_amount_of_move_cards_by_player_player_not_found(mock_session, move_card_repo):
+    mock_db = mock_session.return_value
+    mock_db.get.return_value = None
+    mock_db.close = MagicMock()
+
+    try:
+        move_card_repo.get_amount_of_move_cards_by_player(999)
+    except HTTPException as e:
+        assert e.status_code == 404
+        assert e.detail == "Player not found"
+
+    mock_db.get.assert_called_once_with(PlayerModel, 999)
+    mock_db.close.assert_called_once()
     

@@ -4,9 +4,10 @@ from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from app.crud.match_crud import MatchRepository
+from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
-
+import json
 
 @pytest.fixture
 def player_repo():
@@ -136,11 +137,19 @@ def test_delete_player(mock_session, player_repo):
 
 def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
-    mock_db.get.return_value = PlayerModel(player_id=1)
+    mock_db.get.side_effect = [
+        ShapeCardModel(shape_card_id=1, player_id=1, is_active=True),  # Para ShapeCardModel
+        PlayerModel(player_id=1, match_id=1),  # Para PlayerModel
+        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]))  # Para MatchModel
+    ]
+
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
 
-    player_repo.use_shape_card(1)
+    with patch('app.crud.shapecard_crud.ShapeCardRepository.get_shape_card') as mock_shape_card,\
+            patch('app.crud.shapecard_crud.ShapeCardRepository.set_active_shape_card') as mock_set_active_shape_card:
+            mock_shape_card.return_value = MagicMock()
+            player_repo.use_shape_card(1)
 
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()

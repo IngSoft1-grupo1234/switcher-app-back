@@ -132,9 +132,22 @@ class PlayerRepository:
             shape_card = db.get(ShapeCardModel, shape_card_id)
             if not shape_card:
                 raise HTTPException(status_code=404, detail="Shape card not found.")
+            if not shape_card.is_active:
+                raise HTTPException(status_code=400, detail="Shape card is not active.")
             player = db.get(PlayerModel, shape_card.player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
+            if player.player_id != shape_card.player_id:
+                raise HTTPException(status_code=400, detail="Shape card is not assigned to the player.")
+            
+            match_id = player.match_id
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            turns = json.loads(match.turns)
+            if player.player_id != turns[0]:
+                raise HTTPException(status_code=400, detail="It is not your turn.")
+
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)

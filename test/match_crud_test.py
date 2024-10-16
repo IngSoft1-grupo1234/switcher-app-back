@@ -154,10 +154,13 @@ def test_pass_turn(match_repo, mock_session):
     ],  turns=json.dumps([1, 2]))
     mock_db.query.return_value.get.return_value = mock_match
 
-    result = match_repo.pass_turn(1)
+    with patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]) as mock_get_players_id,\
+        patch('app.crud.shapecard_crud.ShapeCardRepository.get_amount_of_shape_cards_by_player', return_value=3) as mock_get_amount_of_active_shape_cards,\
+        patch('app.crud.movecard_crud.MoveCardRepository.get_amount_of_move_cards_by_player', return_value=3) as mock_get_move_cards_id:
+        result = match_repo.pass_turn(1)
 
     assert result == None
-    assert mock_match.current_turn == 2
+    assert mock_match.current_turn == 1
     mock_db.commit.assert_called_once()
 
 
