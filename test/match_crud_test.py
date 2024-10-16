@@ -89,45 +89,47 @@ def test_delete_match(match_repo, mock_session):
     assert result == None
     mock_db.delete.assert_called_once_with(mock_match)
     mock_db.commit.assert_called_once()
-    def test_start_match(mock_session, match_repo):
-        mock_db = mock_session.return_value
-        mock_match = MatchModel(
-            match_id=1, 
-            match_name="Match1", 
-            max_players=4, 
-            host="Host1", 
-            player_count=2, 
-            current_turn=1, 
-            has_begun=False, 
-            players=[
-                PlayerModel(player_id=1, username="Player1"),
-                PlayerModel(player_id=2, username="Player2")
-            ],
-            move_cards=[]
-        )
-        mock_db.query.return_value.get.return_value = mock_match
+    
+    
+def test_start_match(mock_session, match_repo):
+    mock_db = mock_session.return_value
+    mock_match = MatchModel(
+        match_id=1, 
+        match_name="Match1", 
+        max_players=4, 
+        host="Host1", 
+        player_count=2, 
+        current_turn=1, 
+        has_begun=False, 
+        players=[
+            PlayerModel(player_id=1, username="Player1"),
+            PlayerModel(player_id=2, username="Player2")
+        ],
+        move_cards=[]
+    )
+    mock_db.query.return_value.get.return_value = mock_match
 
-        # Mock MoveCardRepository to avoid creating real move cards
-        mock_move_card = MagicMock()
-        mock_move_card.move_card_id = 1
-        mock_move_card.player_id = None
-        mock_move_card.is_active = False
-        mock_move_card.match_id = 1
-        mock_move_card.move_card_type = MoveCardType.MOV1
+    # Mock MoveCardRepository to avoid creating real move cards
+    mock_move_card = MagicMock()
+    mock_move_card.move_card_id = 1
+    mock_move_card.player_id = None
+    mock_move_card.is_active = False
+    mock_move_card.match_id = 1
+    mock_move_card.move_card_type = MoveCardType.MOV1
 
-        mock_player1 = PlayerModel(player_id=1, username="Player1")
-        mock_player2 = PlayerModel(player_id=2, username="Player2")
+    mock_player1 = PlayerModel(player_id=1, username="Player1")
+    mock_player2 = PlayerModel(player_id=2, username="Player2")
 
 
-        with patch('app.crud.movecard_crud.MoveCardRepository.create_move_card', return_value=mock_move_card) as mock_create_move_card, \
-                patch('app.crud.movecard_crud.MoveCardRepository.assign_move_card_to_player') as mock_assign_move_card_to_player, \
-                patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]) as mock_get_players_id:
+    with patch('app.crud.movecard_crud.MoveCardRepository.create_move_card', return_value=mock_move_card) as mock_create_move_card, \
+            patch('app.crud.movecard_crud.MoveCardRepository.assign_move_card_to_player') as mock_assign_move_card_to_player, \
+            patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]) as mock_get_players_id:
                 
             result = match_repo.start_match(1)
 
-        assert result == [1, 2] or result == [2, 1]  # viable with two players
-        assert mock_match.has_begun is True
-        mock_db.commit.assert_called_once()
+    assert result == [1, 2] or result == [2, 1]  # viable with two players
+    assert mock_match.has_begun is True
+    mock_db.commit.assert_called_once()
 
 
 def test_set_player_count(match_repo, mock_session):
