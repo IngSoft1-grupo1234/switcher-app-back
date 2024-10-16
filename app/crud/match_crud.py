@@ -220,13 +220,32 @@ class MatchRepository:
             if not match.has_begun:
                 raise HTTPException(status_code=409, detail="Match has not started.")
             
-            turns = json.loads(match.turns)
+            player_turn = match.current_turn
+            # Assign shape cards to next player
+            shape_card_repo = ShapeCardRepository()
+            amount = shape_card_repo.get_amount_of_shape_cards_by_player(player_turn)
             
-            current_index = turns.index(match.current_turn)
+            for _ in range(3 - amount):
+                inactive_shapes = shape_card_repo.get_shape_cards_ids_inactive(player_turn)
+                if len(inactive_shapes) > 0:
+                    shape_card_repo.set_active_shape_card(random.choice(inactive_shapes))
+
+
+            move_card_repo = MoveCardRepository()
+            amount = move_card_repo.get_amount_of_move_cards_by_player(player_turn)
+            
+            for _ in range(3 - amount):
+                inactive_moves = move_card_repo.get_move_cards_id_in_match(match_id)
+                if inactive_moves:
+                    raise HTTPException(status_code=400, detail="Match has no more move cards.")
+                move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player_turn)
+            
+            turns = json.loads(match.turns)
+            current_index = turns.index(player_turn)
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
             
-            match.current_turn = next_turn
+            player_turn = next_turn
             db.commit()
         finally:
             db.close()

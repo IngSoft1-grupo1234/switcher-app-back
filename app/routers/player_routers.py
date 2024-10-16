@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, HTTPException
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
+from app.crud.shapecard_crud import ShapeCardRepository
 from app.schemas.player_schemas import PlayerIn, PlayerOut
 from app.websocket.websocket_endpoints import player_manager
 import json
@@ -57,3 +58,14 @@ async def unassign_match_to_player(player_id: int):
 async def delete_player(player_id: int):
     repo = PlayerRepository()
     repo.delete_player(player_id=player_id)
+
+@router.put("/players/use_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def use_shape_card(shape_card_id: int):
+    repo_player = PlayerRepository()
+    repo_shape_card = ShapeCardRepository()
+    shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
+    repo_player.use_shape_card(shape_card_id=shape_card_id)
+
+    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type.value}}
+    print(f"SHAPE CARD USED MESSAGE: {message}")
+    await player_manager.broadcast(json.dumps(message))

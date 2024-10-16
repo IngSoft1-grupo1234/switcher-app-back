@@ -31,6 +31,16 @@ class ShapeCardRepository:
         finally:
             db.close()
     
+    def get_shape_card(self, shape_card_id: int) -> ShapeCardModel:
+        db = session()
+        try:
+            shape_card = db.get(ShapeCardModel, shape_card_id)
+            if not shape_card:
+                raise HTTPException(status_code=404, detail="Shape card not found")
+            return shape_card
+        finally:
+            db.close()
+    
 
     def get_easy_shape_cards_ids_unassigned(self) -> list[ShapeCardModel]:
         db = session()
@@ -54,6 +64,15 @@ class ShapeCardRepository:
                 ShapeCardModel.shape_card_difficulty == ShapeCardDifficulty.HARD,
                 ShapeCardModel.player_id == None
             ).all()
+            shape_cards_ids = [sc[0] for sc in shape_cards]
+            return shape_cards_ids
+        finally:
+            db.close()
+    
+    def get_shape_cards_ids_inactive(self, player_id : int) -> list[ShapeCardModel]:
+        db = session()
+        try:
+            shape_cards = db.query(ShapeCardModel.shape_card_id).filter(ShapeCardModel.is_active == False, ShapeCardModel.player_id == player_id).all()
             shape_cards_ids = [sc[0] for sc in shape_cards]
             return shape_cards_ids
         finally:
@@ -84,6 +103,7 @@ class ShapeCardRepository:
             return shape_card
         finally:
             db.close()
+    
 
     def set_active_shape_card(self, shape_card_id: int):
         db = session()
@@ -128,14 +148,14 @@ class ShapeCardRepository:
         
     
     # futuro para terminar turno 
-    # def get_amount_of_move_cards_by_player(self, player_id: int) -> int:
-    #     db = session()
-    #     try:
-    #         player = db.get(PlayerModel,player_id)
-    #         if not player:
-    #             raise HTTPException(status_code=404, detail="Player not found")
+    def get_amount_of_shape_cards_by_player(self, player_id: int) -> int:
+        db = session()
+        try:
+            player = db.get(PlayerModel,player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found")
             
-    #         move_card_count = db.query(MoveCardModel).filter(MoveCardModel.player_id == player_id).count()
-    #         return move_card_count
-    #     finally:
-    #         db.close()
+            shape_card_count = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == player_id,ShapeCardModel.is_active == True).count()
+            return shape_card_count
+        finally:
+            db.close()

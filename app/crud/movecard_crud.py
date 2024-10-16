@@ -102,14 +102,14 @@ class MoveCardRepository:
             db.close()
     
     # futuro para terminar turno 
-    # def get_amount_of_move_cards_by_player(self, player_id: int) -> int:
-    #     db = session()
-    #     try:
-    #         player = db.get(PlayerModel,player_id)
-    #         if not player:
-    #             raise HTTPException(status_code=404, detail="Player not found")
+    def get_amount_of_move_cards_by_player(self, player_id: int) -> int:
+        db = session()
+        try:
+            player = db.get(PlayerModel,player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found")
             
-    #         move_card_count = db.query(MoveCardModel).filter(MoveCardModel.player_id == player_id).count()
-    #         return move_card_count
-    #     finally:
-    #         db.close()
+            move_card_count = db.query(MoveCardModel).filter(MoveCardModel.player_id == player_id).count()
+            return move_card_count
+        finally:
+            db.close()
