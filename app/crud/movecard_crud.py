@@ -49,6 +49,22 @@ class MoveCardRepository:
         finally:
             db.close()
 
+    def get_move_cards_id_inactive_in_match(self, match_id: int):
+        db = session()
+        try:
+            move_cards = db.query(MoveCardModel.move_card_id).filter(
+                MoveCardModel.match_id == match_id,
+                MoveCardModel.is_active == False
+            ).all()
+            move_card_ids = [mc[0] for mc in move_cards]
+
+            if not move_cards:
+                raise HTTPException(status_code=404, detail="No move cards found for this match")
+            
+            return move_card_ids
+        finally:
+            db.close()
+
 
     def assign_move_card_to_player(self, move_card_id: int, player_id: int):
         db = session()
@@ -188,14 +204,14 @@ class MoveCardRepository:
             if not player or not match:
                 raise HTTPException(status_code=404, detail="Something not found")
             
+            board = json.loads(match.board)
 
             used_cards = json.loads(player.used_cards)
             if not used_cards or used_cards == []:
-                return # match_crud pass_turn la usa. si hay una excepcion aqui caga el pasar turno
-                raise HTTPException(status_code=404, detail="No move cards used by this player")
+                return board, ShapeDetector().test_shape_fitting(board) # regreso board sin tocar, y lista vacia 
             
             # MODULARIZAR ESTO POR DIOS
-            board = json.loads(match.board)
+            
             self.pretty_print_board(board)
             
             for i in range(len(used_cards)):

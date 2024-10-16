@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 from sqlalchemy.orm import declarative_base
@@ -15,3 +15,4 @@ class Player(Base):
     move_cards = relationship("MoveCard", back_populates="players")
     shape_cards = relationship("ShapeCard", back_populates="players")
     used_cards = Column(Text, nullable=True, default="[]") # ids de cartas usadas. sirve :)
+    has_used_shape_card = Column(Boolean, nullable=False, default=False)

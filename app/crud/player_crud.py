@@ -177,6 +177,7 @@ class PlayerRepository:
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
+            player.has_used_shape_card = True
             db.commit()
         finally:
             db.close()

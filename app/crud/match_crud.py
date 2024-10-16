@@ -241,29 +241,45 @@ class MatchRepository:
             player_turn = match.current_turn
             # Assign shape cards to next player
             shape_card_repo = ShapeCardRepository()
-            amount = shape_card_repo.get_amount_of_shape_cards_by_player(player_turn)
+            shape_card_amount = shape_card_repo.get_amount_of_shape_cards_by_player(player_turn)
             
-            for _ in range(3 - amount):
+            
+            for _ in range(3 - shape_card_amount):
                 inactive_shapes = shape_card_repo.get_shape_cards_ids_inactive(player_turn)
                 if len(inactive_shapes) > 0:
                     shape_card_repo.set_active_shape_card(random.choice(inactive_shapes))
 
+            remaining_shape_card_ammount = len(shape_card_repo.get_shape_cards_ids_inactive(player_turn))
 
-            move_card_repo = MoveCardRepository()
-            amount = move_card_repo.get_amount_of_move_cards_by_player(player_turn)
+            # ERROR AQUI
+            current_player = next(player for player in match.players if player.player_id == player_turn)
             
-            for _ in range(3 - amount):
-                inactive_moves = move_card_repo.get_move_cards_id_in_match(match_id)
-                if inactive_moves:
-                    raise HTTPException(status_code=400, detail="Match has no more move cards.")
-                move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player_turn)
+            if current_player.has_used_shape_card:
+                # si no se usa ninguna carta el tablero es, obviamente, inafectado
+                board, shapes = move_card_repo.confirm_moves(match.current_turn)
+                
+                move_card_repo = MoveCardRepository()
+                amount = move_card_repo.get_amount_of_move_cards_by_player(player_turn)
             
+                for _ in range(3 - amount):
+                    inactive_moves = move_card_repo.get_move_cards_id_inactive_in_match(match_id)
+                    if not inactive_moves:
+                        raise HTTPException(status_code=400, detail="Match has no more move cards.")
+                    move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player_turn)
+            else:
+                board = json.loads(match.board)
+                shapes = ShapeDetector().test_shape_fitting(board)
+                used_cards = json.loads(current_player.used_cards)
+                for _ in range(len(used_cards)):
+                    move_card_repo.cancel_soft_move(current_player.player_id)
+            
+            current_player.has_used_shape_card = False
             turns = json.loads(match.turns)
             current_index = turns.index(player_turn)
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
             
-            board, shapes = move_card_repo.confirm_moves(match.current_turn)
+            
 
             match.current_turn = next_turn
             
@@ -273,6 +289,7 @@ class MatchRepository:
             db.close()
 
     
+    # esto no se usa, chequear si se puede borrar :D
     def set_player_count(self, match_id, player_count):
         db = session()
         try:
