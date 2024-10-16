@@ -125,3 +125,42 @@ class PlayerRepository:
             db.commit()
         finally:
             db.close()
+
+
+
+    def use_shape_card(self, player_id, shape_card_id):
+        # ACA COMPLETA CON LO TUYO COLO
+        return 0
+
+    
+
+    def winner_without_shape_card(self, player_id):
+        db = session()
+        try:
+            player = db.get(PlayerModel, player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+        
+            shape_cards = player.shape_cards
+            if not shape_cards:
+                match = db.get(MatchModel, player.match_id)
+
+                match.has_begun = False
+                winner_username = player.username
+                winner_player_id = player.player_id
+
+                for p in match.players:
+                    if p.player_id != match.host:
+                        self.unassign_match_to_player(p.player_id)
+                
+                self.unassign_match_to_player(match.host)
+                db.commit()
+                    
+                return {"winner_username": winner_username, "winner_player_id": winner_player_id}
+        finally:
+            db.close()
+
+    
+
+
+        

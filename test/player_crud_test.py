@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
+from app.models.shapecard_models import ShapeCard as ShapeCardModel 
 from app.crud.match_crud import MatchRepository
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -132,3 +133,51 @@ def test_delete_player(mock_session, player_repo):
     mock_db.get.assert_called_once_with(PlayerModel, 1)
 
     mock_db.commit.assert_called_once()
+
+
+
+
+def test_winner_without_shape_card(mock_session, player_repo):
+    mock_db = mock_session.return_value
+    mock_player = PlayerModel(player_id=1, username="test_user", match_id=1)
+    mock_other_player = PlayerModel(player_id=2, username="other_user", match_id=1)
+    
+    mock_player.shape_cards = []  
+    mock_other_player.shape_cards = [ShapeCardModel(shape_card_id=1)]
+    
+    mock_match = MatchModel(match_id=1, has_begun=True, host=1, players=[mock_player, mock_other_player], player_count=2)
+    mock_player.match = mock_match
+    
+    def mock_get(model, id):
+        if model == PlayerModel and id == 1:
+            return mock_player
+        elif model == PlayerModel and id == 2:
+            return mock_other_player
+        elif model == MatchModel and id == 1:
+            return mock_match
+        return None
+
+    mock_db.get.side_effect = mock_get
+    mock_db.commit = MagicMock()
+    mock_db.close = MagicMock()
+    
+    result = player_repo.winner_without_shape_card(1)
+
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    assert mock_db.commit.call_count == 3
+    assert mock_db.close.call_count == 3
+
+    assert result == {"winner_username": "test_user", "winner_player_id": 1}
+
+
+
+
+
+
+
+
+
+
+
+
+

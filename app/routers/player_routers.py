@@ -59,3 +59,24 @@ async def unassign_match_to_player(player_id: int):
 async def delete_player(player_id: int):
     repo = PlayerRepository()
     repo.delete_player(player_id=player_id)
+
+
+@router.put("/players/use_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def use_shape_card(player_id: int, shape_card_id: int):
+
+    repo = PlayerRepository()
+
+    # Completa acá colo
+
+
+    winner_json = repo.winner_without_shape_card(player_id=player_id)
+    if winner_json:
+        winner_message = {"action": "game-won","data": {"playername": winner_json["winner_username"], "player_id": winner_json["winner_player_id"]}}
+        print(f"WINNER MESSAGE: {winner_message}")
+        await player_manager.broadcast(json.dumps(winner_message))
+    
+
+
+
+
+
