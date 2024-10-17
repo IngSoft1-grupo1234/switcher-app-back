@@ -191,18 +191,31 @@ class PlayerRepository:
                 raise HTTPException(status_code=404, detail="Player not found.")
         
             shape_cards = player.shape_cards
+
+            # check if player has shape cards and is the winner
             if not shape_cards:
                 match = db.get(MatchModel, player.match_id)
 
-                match.has_begun = False
                 winner_username = player.username
                 winner_player_id = player.player_id
 
+                # remove all moves from match
+                moves = db.query(MoveCardModel).filter(MoveCardModel.match_id == match.match_id).all()
+                if not moves:
+                    raise HTTPException(status_code=400, detail="Player has no moves.")
+                for move in moves:
+                    delete_move = db.get(MoveCardModel, move.move_card_id)
+                    db.delete(delete_move)
+
+                # remove all shapes from player
                 for p in match.players:
-                    if p.player_id != match.host:
-                        self.unassign_match_to_player(p.player_id)
+                    shapes = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == p.player_id).all()
+                    for shape in shapes:
+                        delete_shape = db.get(ShapeCardModel, shape.shape_card_id)
+                        db.delete(delete_shape)
+                    p.match_id = None
                 
-                self.unassign_match_to_player(match.host)
+                db.delete(match)
                 db.commit()
                     
                 return {"winner_username": winner_username, "winner_player_id": winner_player_id}

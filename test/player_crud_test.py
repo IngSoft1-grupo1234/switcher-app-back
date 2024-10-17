@@ -4,8 +4,8 @@ from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from app.models.shapecard_models import ShapeCard as ShapeCardModel 
+from app.models.movecard_models import MoveCard as MoveCardModel
 from app.crud.match_crud import MatchRepository
-from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import json
@@ -156,18 +156,18 @@ def test_use_shape_card(mock_session, player_repo):
     mock_db.close.assert_called_once()
 
 
-
-
 def test_winner_without_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_player = PlayerModel(player_id=1, username="test_user", match_id=1)
     mock_other_player = PlayerModel(player_id=2, username="other_user", match_id=1)
-    
     mock_player.shape_cards = []  
     mock_other_player.shape_cards = [ShapeCardModel(shape_card_id=1)]
     
     mock_match = MatchModel(match_id=1, has_begun=True, host=1, players=[mock_player, mock_other_player], player_count=2)
     mock_player.match = mock_match
+    
+    mock_moves = [MoveCardModel(move_card_id=1, match_id=1, player_id=1),
+                  MoveCardModel(move_card_id=2, match_id=1, player_id=2)]
     
     def mock_get(model, id):
         if model == PlayerModel and id == 1:
@@ -176,19 +176,41 @@ def test_winner_without_shape_card(mock_session, player_repo):
             return mock_other_player
         elif model == MatchModel and id == 1:
             return mock_match
+        elif model == MoveCardModel and id in [1, 2]:
+            return next((move for move in mock_moves if move.move_card_id == id), None)
         return None
 
+    def mock_query(model):
+        query_mock = MagicMock()
+        if model == MoveCardModel:
+            query_mock.filter.return_value.all.return_value = mock_moves
+        elif model == ShapeCardModel:
+            if mock_db.get(PlayerModel, 2):  
+                query_mock.filter.return_value.all.return_value = mock_other_player.shape_cards
+            else:
+                query_mock.filter.return_value.all.return_value = []
+        return query_mock
+
     mock_db.get.side_effect = mock_get
+    mock_db.query.side_effect = mock_query
+    mock_db.delete = MagicMock()
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
     
     result = player_repo.winner_without_shape_card(1)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
-    assert mock_db.commit.call_count == 3
-    assert mock_db.close.call_count == 3
+    mock_db.get.assert_any_call(MatchModel, 1)
+    
+    assert mock_db.delete.call_count == 5 
+    mock_db.commit.assert_called_once()  
+    mock_db.close.assert_called_once() 
 
     assert result == {"winner_username": "test_user", "winner_player_id": 1}
+
+
+
+
 
 
 
