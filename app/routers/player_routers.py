@@ -37,19 +37,23 @@ async def assign_match_to_player(player_idd: int, match_idd: int):
     message = {"action": "player-joined-game","data": {"playername": db_player.username,"match_id": match_idd}}
     print(f"JOIN MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
-    
 
 @router.put("/players/{player_id}/UnassignMatch", status_code=status.HTTP_204_NO_CONTENT)
 async def unassign_match_to_player(player_id: int):
-    repo = PlayerRepository()
+    repo_player = PlayerRepository()
+    repo_match = MatchRepository()
+    player = repo_player.get_player(player_id=player_id)
     
-    winner_json = repo.unassign_match_to_player(player_id=player_id)
+    if repo_player.is_player_turn(player_id):
+        repo_match.pass_turn(player.match_id)
+
+    winner_json = repo_player.unassign_match_to_player(player_id=player_id)
     if winner_json:
         winner_message = {"action": "game-won","data": winner_json["winner_username"]}
         print(f"WINNER MESSAGE: {winner_message}")
         await player_manager.send(json.dumps(winner_message), winner_json["winner_player_id"])
 
-    db_player = repo.get_player(player_id=player_id)
+    db_player = repo_player.get_player(player_id=player_id)
     message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id}}
     print(f"EXIT MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
