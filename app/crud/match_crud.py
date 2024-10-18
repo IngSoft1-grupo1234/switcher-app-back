@@ -113,8 +113,12 @@ class MatchRepository:
             # Distribuir cartas de movimiento
             
             self.__distribute_move_cards(match_id)
-            self.__distribute_shape_cards(match_id)
-
+            delete_shape_cards = self.__distribute_shape_cards(match_id)
+            
+            for card in delete_shape_cards:
+                delete_card = db.query(ShapeCardModel).get(card)
+                db.delete(delete_card)
+            
             shuffled_turns = self.__shuffle_turns(match.players)
             match.turns = json.dumps(shuffled_turns)
             match.has_begun = True
@@ -223,6 +227,8 @@ class MatchRepository:
 
             for card in active_shape_cards:
                 shape_card_repo.set_active_shape_card(card)
+        delete_shape_cards = easy_shape_cards + hard_shape_cards
+        return delete_shape_cards
 
 
 
