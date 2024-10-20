@@ -1,6 +1,6 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.movecard_models import MoveCard as MoveCardModel
-from app.schemas.movecard_schemas import MoveCardIn
+from app.schemas.movecard_schemas import MoveCardIn, MoveCardPreview
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
@@ -152,6 +152,8 @@ class MoveCardRepository:
             if not movement_info.position or not movement_info.orientation:
                 raise HTTPException(status_code=400, detail="Invalid movement info, missing fields")
             if movement_info.position[0] != "[" or movement_info.position[-1] != "]":
+                raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
+            if len(json.loads(movement_info.position)) != 2:
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
             
             # Valida movimiento
@@ -386,11 +388,11 @@ class MoveCardRepository:
         finally:
             db.close()
 
-    def preview_move_card(self, position: str, move_type: int) -> dict:
+    def preview_move_card(self, movement_info: MoveCardPreview) -> dict:
         try:
             db = session()
 
-            if position[0] != "[" or position[-1] != "]":
+            if movement_info.position[0] != "[" or movement_info.position[-1] != "]":
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
             
             res = {}
@@ -403,12 +405,14 @@ class MoveCardRepository:
                 ["", "", "", "", "", ""],
                 ["", "", "", "", "", ""]
             ]
-            position_list = json.loads(position)
+            position_list = json.loads(movement_info.position)
+            if len(position_list) != 2:
+                raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
             
             x = position_list[0]
             y = position_list[1]
             for orientation in ["up", "down", "left", "right"]:
-                movement = self.__get_card_movement(move_type, orientation)
+                movement = self.__get_card_movement(movement_info.move_type, orientation)
                 new_x = x + movement[0]
                 new_y = y + movement[1]
                 if 0 <= new_x < len(board) and 0 <= new_y < len(board[0]):

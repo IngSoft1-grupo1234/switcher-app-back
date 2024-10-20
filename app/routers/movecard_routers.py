@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, HTTPException
 from typing import List
-from app.schemas.movecard_schemas import MoveCardOut, MoveCardIn
+from app.schemas.movecard_schemas import MoveCardOut, MoveCardIn, MoveCardPreview
 from app.crud.movecard_crud import MoveCardRepository
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
@@ -50,10 +50,10 @@ async def cancel_soft_move(player_id: int):
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
 
 # Endpoint para previsualizar movimientos de una carta
-@router.get("/move_cards/preview",status_code=status.HTTP_200_OK)
-async def preview_move_card(position: str, move_type: int):
+@router.put("/move_cards/preview",status_code=status.HTTP_200_OK)
+async def preview_move_card(movement_info: MoveCardPreview):
     move_card_repo = MoveCardRepository()
-    dict = move_card_repo.preview_move_card(position, move_type)
+    dict = move_card_repo.preview_move_card(movement_info)
     print(f"PREVIEW_MOVE_CARD: {dict}")
     return dict
     
