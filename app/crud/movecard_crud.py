@@ -314,13 +314,13 @@ class MoveCardRepository:
             raise HTTPException(status_code=400, detail="Invalid orientation")
         
         movements = {
-            1: { # diagonal salto una casilla
+            2: { # diagonal salto una casilla
                 "up": [-2, 2],
                 "down": [2, -2],
                 "left": [-2, -2],
                 "right": [2, 2]
             },
-            2: { # recto salto una casilla
+            4: { # recto salto una casilla
                 "up": [-2, 0],
                 "down": [2, 0],
                 "left": [0, -2],
@@ -332,19 +332,19 @@ class MoveCardRepository:
                 "left": [0, -1],
                 "right": [0, 1]
             },
-            4: { # diagonal sin salto
+            1: { # diagonal sin salto
                 "up": [-1, 1],
                 "down": [1, -1],
                 "left": [-1, -1],
                 "right": [1, 1]
             },
-            5: { # L invertida
+            6: { # L invertida
                 "up": [-2, 1],
                 "down": [2, -1],
                 "left": [-1, -2],
                 "right": [1, 2]
             },
-            6: { # L
+            5: { # L
                 "up": [-2, -1],
                 "down": [2, 1],
                 "left": [1, -2],
