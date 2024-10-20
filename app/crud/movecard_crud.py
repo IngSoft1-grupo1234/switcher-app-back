@@ -153,6 +153,7 @@ class MoveCardRepository:
                 raise HTTPException(status_code=400, detail="Invalid movement info, missing fields")
             if movement_info.position[0] != "[" or movement_info.position[-1] != "]":
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
+            print(f"HEAAAAAAAAAAAAAAAAAA {json.loads(movement_info.position)}")
             if len(json.loads(movement_info.position)) != 2:
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
             

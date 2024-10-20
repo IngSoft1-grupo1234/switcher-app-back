@@ -67,9 +67,10 @@ class ShapeDetector:
                 for shapes in SHAPE_TYPES[keys]:
                     var = SHAPE_TYPES[keys][shapes](row, col)
                     if len(var) == len(group) and sorted(group) == sorted(var):
+                        shape_number = int(shapes.split('_')[1])
                         result[key] = {
                             'color': color,
-                            'shape': shapes,
+                            'shape': shape_number,
                             'positions': var
                         }
                         key += 1
