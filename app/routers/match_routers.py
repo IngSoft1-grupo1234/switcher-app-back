@@ -132,17 +132,13 @@ async def get_match_start_info(match_id: int):
 # Pasa el turno al siguiente jugador ✓ 
 @router.put("/matches/{match_id}/next_turn", status_code=status.HTTP_204_NO_CONTENT)
 async def pass_turn(match_id):
-    # por ahora todos los jugadores pueden pasar el turno de todos.
-    # tendria que tomar player_id. PEROOOO es posible que un jugador
-    # se haga pasar por otro y pase el turno de otro jugador.
-    # pero esto nunca lo tenemos en cuenta XD
-    # habria que usar como player id al websocket de alguna manera, pero habria que cambiar todo el proyecto literalmente
     repo = MatchRepository()
     next_player_json = repo.get_next_player(match_id=match_id)
 
+    # what, get_next_player ya maneja estas excepciones
     if next_player_json is None:
         raise HTTPException(status_code=404, detail="Match not found.")
-    elif not next_player_json:
+    elif not next_player_json: 
         raise HTTPException(status_code=400, detail="No next player available.")
 
     updated_board, shapes = repo.pass_turn(match_id=match_id)

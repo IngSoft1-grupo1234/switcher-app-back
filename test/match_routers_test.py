@@ -143,15 +143,11 @@ b = [
 s = {}
 
 def test_pass_turn():
-    expected_response1 = {
-        "next_player_name": "Player2",
-        "next_player_id": 2
-    }
-    expected_response2 = {
+    expected_response = {
         "username": "Player2",
         "player_id": 2
     }
-    with patch.object(MatchRepository, 'get_next_player', return_value="Player2"),\
+    with patch.object(MatchRepository, 'get_next_player', return_value=expected_response),\
             patch.object(MatchRepository, 'pass_turn', return_value=(b,s)),\
             patch.object(MatchRepository, 'get_player_ids_in_match', return_value=[1, 2]):
         response = client.put("/matches/1/next_turn")
@@ -172,9 +168,10 @@ def test_pass_turn_match_not_found():
 def test_pass_turn_no_next_player():
     with patch('app.crud.match_crud.MatchRepository.pass_turn', return_value=(b,s)):
         with patch('app.crud.match_crud.MatchRepository.get_next_player', return_value=None),\
-                patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]):
-            response = client.put("/matches/1/next_turn")
-            assert response.status_code == 204  
+            patch('app.crud.match_crud.MatchRepository.get_player_ids_in_match', return_value=[1, 2]):
+                with pytest.raises(HTTPException) as exc_info:
+                    response = client.put("/matches/1/next_turn")
+                    assert response.status_code == 404  
 
 
 

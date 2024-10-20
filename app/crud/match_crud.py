@@ -255,9 +255,7 @@ class MatchRepository:
                 if len(inactive_shapes) > 0:
                     shape_card_repo.set_active_shape_card(random.choice(inactive_shapes))
 
-            remaining_shape_card_ammount = len(shape_card_repo.get_shape_cards_ids_inactive(player_turn))
-
-            # ERROR AQUI
+            # ERROR AQUI (? what)
             current_player = next(player for player in match.players if player.player_id == player_turn)
             
             if current_player.has_used_shape_card:
