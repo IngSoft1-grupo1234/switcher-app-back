@@ -90,7 +90,7 @@ class MatchRepository:
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             for player in match.players:
-                player.match_id = None 
+                player.match_id = None  # hay que usar unassing aqui
             db.delete(match)
             db.commit()
 

@@ -100,6 +100,7 @@ class PlayerRepository:
                 player.match_id = None
                 player.move_cards = []
                 player.shape_cards = []
+                player.has_used_shape_card = False
                 # clean up match's attributes
                 match.player_count -= 1
                 # check if player is the winner
