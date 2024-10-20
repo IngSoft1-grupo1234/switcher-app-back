@@ -147,8 +147,14 @@ class MoveCardRepository:
                 raise HTTPException(status_code=400, detail="Move card already used")
             used_cards.append(card.move_card_id)
 
-            # Valida movimiento
+            # Valida input
             board = json.loads(match.board)
+            if not movement_info.position or not movement_info.orientation:
+                raise HTTPException(status_code=400, detail="Invalid movement info, missing fields")
+            if movement_info.position[0] != "[" or movement_info.position[-1] != "]":
+                raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
+            
+            # Valida movimiento
             self.__apply_move_card(card.move_card_type.value, board, movement_info.orientation, json.loads(movement_info.position))
 
             # actualizacion en database
