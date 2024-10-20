@@ -385,3 +385,37 @@ class MoveCardRepository:
             return move_card_count
         finally:
             db.close()
+
+    def preview_move_card(self, position: str, move_type: int) -> dict:
+        try:
+            db = session()
+
+            if position[0] != "[" or position[-1] != "]":
+                raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
+            
+            res = {}
+            board = \
+            [
+                ["", "", "", "", "", ""],
+                ["", "", "", "", "", ""],
+                ["", "", "", "", "", ""],
+                ["", "", "", "", "", ""],
+                ["", "", "", "", "", ""],
+                ["", "", "", "", "", ""]
+            ]
+            position_list = json.loads(position)
+            
+            x = position_list[0]
+            y = position_list[1]
+            for orientation in ["up", "down", "left", "right"]:
+                movement = self.__get_card_movement(move_type, orientation)
+                new_x = x + movement[0]
+                new_y = y + movement[1]
+                if 0 <= new_x < len(board) and 0 <= new_y < len(board[0]):
+                    res[orientation] = (new_x, new_y)
+                else:
+                    res[orientation] = None
+
+            return res
+        finally:
+            db.close()

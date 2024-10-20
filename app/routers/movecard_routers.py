@@ -48,4 +48,12 @@ async def cancel_soft_move(player_id: int):
     message = {"action": "update-board", "data": {"board": updated_board, "shapes": shapes}}
     print(f"CANCEL_MOVE_WEBSOCKET: {message}")
     await player_manager.broadcast_to_id_list(json.dumps(message), ids_from_match)
+
+# Endpoint para previsualizar movimientos de una carta
+@router.get("/move_cards/preview",status_code=status.HTTP_200_OK)
+async def preview_move_card(position: str, move_type: int):
+    move_card_repo = MoveCardRepository()
+    dict = move_card_repo.preview_move_card(position, move_type)
+    print(f"PREVIEW_MOVE_CARD: {dict}")
+    return dict
     
