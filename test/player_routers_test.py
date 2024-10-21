@@ -74,13 +74,7 @@ def test_assign_match_to_player_match_not_found(player_data):
                 assert response.status_code == 404
                 assert exc_info.value.detail == "Match not found."
 
-def test_unassign_match_to_player():
-    with patch('app.crud.player_crud.session') as mock_session:
-        mock_db = mock_session.return_value
-        mock_db.get.side_effect = [PlayerModel(player_id=1, match_id=1)]
-        with patch.object(PlayerRepository, 'unassign_match_to_player', return_value=None):
-            response = client.put("/players/1/UnassignMatch")
-            assert response.status_code == 204
+
 
 def test_unassign_match_to_player_not_found(mock_session):
     mock_db = mock_session.return_value

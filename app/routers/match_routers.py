@@ -6,6 +6,7 @@ from app.crud.movecard_crud import MoveCardRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.schemas.match_schemas import MatchIn, MatchOut
 from app.websocket.websocket_endpoints import player_manager
+from app.shape_detection.DFS import ShapeDetector
 import json
 
 
@@ -114,6 +115,7 @@ async def get_match_start_info(match_id: int):
     shapecard_repo = ShapeCardRepository()
     turns = repo.get_turns(match_id=match_id)
     board = repo.get_board(match_id=match_id)
+    shapes = ShapeDetector().test_shape_fitting(board)
     move_cards_list = {}
     for player in turns:
         players_cards = movecard_repo.get_move_cards_by_player(player)
@@ -126,7 +128,7 @@ async def get_match_start_info(match_id: int):
         figure_cards_list[player] = []
         for card in players_cards:
             figure_cards_list[player].append(card.shape_card_type.value)
-    return {"turns": turns, "board": board, "move_cards": move_cards_list, "figure_cards": figure_cards_list}
+    return {"turns": turns, "board": board, "move_cards": move_cards_list, "figure_cards": figure_cards_list, "shapes": shapes}
 
 
 # Pasa el turno al siguiente jugador ✓ 
