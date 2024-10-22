@@ -13,7 +13,7 @@ class Match(Base):
     player_count = Column(Integer, default=0)
     current_turn = Column(Integer, default=0)
     has_begun = Column(Boolean, default=False)
-    turns = Column(Text, nullable=True)
+    turns = Column(Text, nullable=True, default="[]")
     board = Column(Text, nullable=True)
     players = relationship("Player", back_populates="matches")
     move_cards = relationship("MoveCard", back_populates="matches")
