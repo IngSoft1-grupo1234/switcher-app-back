@@ -234,6 +234,8 @@ class PlayerRepository:
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             turns = json.loads(match.turns)
+            if len(turns) == 0:
+                return "bazinga"
             return player.player_id == turns[0]
         finally:
             db.close()
