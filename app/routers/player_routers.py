@@ -45,7 +45,8 @@ async def unassign_match_to_player(player_id: int):
     player = repo_player.get_player(player_id=player_id)
     
     if repo_player.is_player_turn(player_id):
-        repo_match.pass_turn(player.match_id)
+        if repo_player.is_player_turn(player_id) != "bazinga":
+            repo_match.pass_turn(player.match_id)
 
     winner_json = repo_player.unassign_match_to_player(player_id=player_id)
     if winner_json:
