@@ -55,7 +55,7 @@ async def unassign_match_to_player(player_id: int):
         await player_manager.send(json.dumps(winner_message), winner_json["winner_player_id"])
 
     db_player = repo_player.get_player(player_id=player_id)
-    message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id}}
+    message = {"action": "player-left-game","data": {"playername": db_player.username,"match_id": db_player.match_id, "player_id": db_player.player_id}}    
     print(f"EXIT MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
 
