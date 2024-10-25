@@ -82,6 +82,7 @@ class PlayerRepository:
                 turns.remove(player_id)
                 match.turns = json.dumps(turns)
                 # update match's moves
+            
                 moves = db.query(MoveCardModel).filter(MoveCardModel.player_id == player.player_id).all()
                 if not moves:
                     raise HTTPException(status_code=400, detail="Player has no moves.")
@@ -124,6 +125,16 @@ class PlayerRepository:
                         delete_shape = db.get(ShapeCardModel, shape.shape_card_id)
                         db.delete(delete_shape)
                     winner_player.match_id = None
+
+
+                    # borra el timer de la partida
+                    from app.crud.match_crud import MatchRepository as MR
+                    mr = MR()
+                    del mr.timer_events[match.match_id]
+                    del mr.timer_tasks[match.match_id]
+
+
+
                     db.delete(match)
                     db.commit()
                     return {"winner_username": winner_username, "winner_player_id": winner_player_id}
@@ -216,6 +227,12 @@ class PlayerRepository:
                         db.delete(delete_shape)
                     p.match_id = None
                 
+                # borra el timer de la partida
+                from app.crud.match_crud import MatchRepository as MR
+                mr = MR()
+                del mr.timer_events[match.match_id]
+                del mr.timer_tasks[match.match_id]
+
                 db.delete(match)
                 db.commit()
                     
