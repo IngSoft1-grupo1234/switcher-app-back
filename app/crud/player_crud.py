@@ -3,10 +3,15 @@ from app.models.match_models import Match as MatchModel
 from app.models.movecard_models import MoveCard as MoveCardModel
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
-from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
+from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty # redundante 
+from app.models.chat_models import Chat as ChatModel
+from app.models.chat_models import messageType
+from app.websocket.websocket_endpoints import player_manager
 from app.database import session
+import asyncio
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
+from datetime import datetime
 import json
 
 class PlayerRepository:
@@ -47,20 +52,30 @@ class PlayerRepository:
             # Si el jugador no esta en la partida
             if player.match_id != match.match_id:
                 player.match_id = match.match_id
-                match.players.append(player)
+                match.players.append(player) # al pedo
                 if match.player_count is None: # cosa rara para test, no entiendo.
                     match.player_count = 0
                 match.player_count += 1
+
                 db.commit()
+
+                # CHAT MESSAGE
+                player_ids = [player.player_id for player in match.players]
+                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has joined the game.",
+                                                                      message_type=messageType.PlayerJoins, 
+                                                                      match_id=player.match_id, 
+                                                                      ids=player_ids))
             else:
                 raise HTTPException(status_code=409, detail="Player is already in the match.")
+            
+
                
         except IntegrityError:
             raise HTTPException(status_code=409, detail="Match is full.")
         finally:
             db.close()
     
-    def unassign_match_to_player(self, player_id):
+    def unassign_match_to_player(self, player_id): # si abandona jugador actual_turn se caga todo creo
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
@@ -123,6 +138,10 @@ class PlayerRepository:
                     for shape in shapes:
                         delete_shape = db.get(ShapeCardModel, shape.shape_card_id)
                         db.delete(delete_shape)
+                    # remove all chat messages from match
+                    for chat in match.chats:
+                        delete_chat = db.get(ChatModel, chat.chat_id)
+                        db.delete(delete_chat)
                     winner_player.match_id = None
                     db.delete(match)
                     db.commit()
@@ -137,6 +156,14 @@ class PlayerRepository:
                 match.player_count -= 1
             
             db.commit()
+
+            # CHAT MESSAGE
+            player_ids = [player.player_id for player in match.players]
+            if match:
+                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has left the game.",
+                                                                      message_type=messageType.PlayerDisconnects, 
+                                                                      match_id=match.match_id, 
+                                                                      ids=player_ids))
         finally:
             db.close()
     
@@ -172,7 +199,7 @@ class PlayerRepository:
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
             turns = json.loads(match.turns)
-            if player.player_id != turns[0]:
+            if player.player_id != player.matches.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
 
             shape_card.is_active = False
@@ -180,6 +207,13 @@ class PlayerRepository:
             db.delete(shape_card)
             player.has_used_shape_card = True
             db.commit()
+
+             # CHAT MESSAGE
+            player_ids = [player.player_id for player in match.players]
+            asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has used a shape card.",
+                                                                  message_type=messageType.PlayerUsesShapeCard, 
+                                                                  match_id=player.match_id, 
+                                                                  ids=player_ids))
         finally:
             db.close()
     
@@ -209,6 +243,7 @@ class PlayerRepository:
                     db.delete(delete_move)
 
                 # remove all shapes from player
+                player_ids = [player.player_id for player in match.players]
                 for p in match.players:
                     shapes = db.query(ShapeCardModel).filter(ShapeCardModel.player_id == p.player_id).all()
                     for shape in shapes:
@@ -216,9 +251,21 @@ class PlayerRepository:
                         db.delete(delete_shape)
                     p.match_id = None
                 
+                # remove all chat messages from match
+                for chat in match.chats:
+                    delete_chat = db.get(ChatModel, chat.chat_id)
+                    db.delete(delete_chat)
+                
                 db.delete(match)
                 db.commit()
-                    
+
+                # CHAT MESSAGE
+                
+                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{winner_username} has won the game.",
+                                                                      message_type=messageType.PlayerWins,  
+                                                                      match_id=player.match_id, 
+                                                                      ids=player_ids))
+                
                 return {"winner_username": winner_username, "winner_player_id": winner_player_id}
         finally:
             db.close()
@@ -239,6 +286,70 @@ class PlayerRepository:
             return player.player_id == turns[0]
         finally:
             db.close()
+
+    def player_send_message(self, player_id, content, time):
+        try:
+            db = session()
+
+
+
+            player = db.get(PlayerModel, player_id)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            if player.match_id is None:
+                raise HTTPException(status_code=400, detail="Player is not assigned to any match.")
+            
+            match = db.get(MatchModel, player.match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+            
+            if not self.__validate_time_format(time):
+                raise HTTPException(status_code=400, detail="Invalid time format.")
+
+            player_ids = [player.player_id for player in match.players]
+
+            content = f"{player.username}: {content}"
+
+            asyncio.create_task(self.broadcast_message_to_id_list(content=content, 
+                                                                  message_type=messageType.PlayerMessage,
+                                                                  match_id=player.match_id, 
+                                                                  ids=player_ids))
+            
+        finally:
+            db.close()
+
+    
+    def __validate_time_format(self, time_str):
+        try:
+            datetime.strptime(time_str, "%H:%M")
+            return True
+        except ValueError:
+            return False
+        
+    async def broadcast_message_to_id_list(self, content: str, message_type: messageType, match_id: int, ids: list[int]):
+        time = datetime.now().strftime("%H:%M")
+        chat = ChatModel(message_type=message_type, 
+                                 content=content,  
+                                 match_id=match_id, 
+                                 time_sent=time)
+        
+        try:
+            db = session()
+            db.add(chat)
+            db.commit()
+        finally:
+            db.close()
+
+        data_to_send = {
+            "message_type": message_type.name,
+            "content": content,
+            "time_sent": time
+        }
+        
+        message = {"action": "chat-message","data": {"message": data_to_send}}
+        print(f"CHAT MESSAGE: {message}")
+        await player_manager.broadcast_to_id_list(json.dumps(message), ids)
+
 
     
 

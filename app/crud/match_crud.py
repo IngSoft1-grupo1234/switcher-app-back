@@ -7,6 +7,9 @@ from app.crud.movecard_crud import MoveCardRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
+from app.models.chat_models import messageType
+import asyncio
+from app.crud.player_crud import PlayerRepository 
 from app.database import session
 from app.shape_detection.DFS import ShapeDetector
 import random
@@ -83,7 +86,7 @@ class MatchRepository:
             "board": match.board
         }
 
-    def delete_match(self, match_id):
+    def delete_match(self, match_id): # nunca usar esto, muerte instantanea
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
@@ -147,6 +150,15 @@ class MatchRepository:
             ShapeDetector().pretty_print_result(shapes)
 
             db.commit()
+
+            player_ids = [player.player_id for player in match.players]
+
+            player_repo = PlayerRepository()
+            asyncio.create_task(player_repo.broadcast_message_to_id_list(content="The Host has started the game.", 
+                                                                  message_type=messageType.PlayerStartsGame, 
+                                                                  match_id=match.match_id, 
+                                                                  ids=player_ids))
+            
             return {
                 "turns": shuffled_turns,
                 "board": board,
@@ -288,6 +300,14 @@ class MatchRepository:
             match.current_turn = next_turn
             
             db.commit()
+
+            player_ids = [player.player_id for player in match.players]
+
+            player_repo = PlayerRepository()
+            asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{current_player.username} has passed the turn.", 
+                                                                  message_type=messageType.PlayerPassTurn, 
+                                                                  match_id=current_player.match_id, 
+                                                                  ids=player_ids))
             return board, shapes
         finally:
             db.close()

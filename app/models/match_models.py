@@ -17,6 +17,7 @@ class Match(Base):
     board = Column(Text, nullable=True)
     players = relationship("Player", back_populates="matches")
     move_cards = relationship("MoveCard", back_populates="matches")
+    chats = relationship("Chat", cascade="all, delete-orphan")
     
 
     __table_args__ = (

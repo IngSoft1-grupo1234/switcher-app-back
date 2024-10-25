@@ -3,6 +3,7 @@ from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.schemas.player_schemas import PlayerIn, PlayerOut
+from app.schemas.chat_schemas import ChatIn
 from app.websocket.websocket_endpoints import player_manager
 import json
 
@@ -82,3 +83,9 @@ async def use_shape_card(shape_card_id: int):
         winner_message = {"action": "game-won","data": {"playername": winner_json["winner_username"], "player_id": winner_json["winner_player_id"]}}
         print(f"WINNER MESSAGE: {winner_message}")
         await player_manager.broadcast(json.dumps(winner_message))
+
+@router.put("/players/{player_id}/send_message", status_code=status.HTTP_204_NO_CONTENT)
+async def send_message(player_id: int, message_info: ChatIn):
+    repo = PlayerRepository()
+    repo.player_send_message(player_id=player_id, message=message_info.content, time=message_info.time)
+    # player_cruds hace el broadcast_to_id_list
