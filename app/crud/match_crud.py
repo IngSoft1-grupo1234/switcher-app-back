@@ -14,16 +14,8 @@ from app.database import session
 from app.shape_detection.DFS import ShapeDetector
 import random
 import json
-import asyncio
 
 class MatchRepository:
-    def __init__(self):
-        # ESTO SE GUARDA EN TODOS LAS INSTANCIAS DE ESTA CLASE WUOOOOO UAUWAUAWUWAU
-        if not hasattr(self.__class__, 'timer_events'):
-            self.__class__.timer_events = {}
-        if not hasattr(self.__class__, 'timer_tasks'):
-            self.__class__.timer_tasks = {}
-
     def create_match(self, match_name, max_players, host) -> MatchModel:
         db_match = MatchModel(match_name=match_name, max_players=max_players, host=host)
 
@@ -167,9 +159,6 @@ class MatchRepository:
                                                                   match_id=match.match_id, 
                                                                   ids=player_ids))
             
-            self.timer_events[match.match_id] = asyncio.Event()
-            self.timer_tasks[match.match_id] = asyncio.create_task(self.timer(match_id))
-            print(f"\n\n START self.timer_events = {self.timer_events}\n\n")
             return {
                 "turns": shuffled_turns,
                 "board": board,
@@ -319,9 +308,6 @@ class MatchRepository:
                                                                   message_type=messageType.PlayerPassTurn, 
                                                                   match_id=current_player.match_id, 
                                                                   ids=player_ids))
-            if match.match_id in self.timer_events:
-                self.timer_events[match.match_id].set()
-
             return board, shapes
         finally:
             db.close()
@@ -417,14 +403,7 @@ class MatchRepository:
         finally:
             db.close()
     
-    async def timer(self, match_id):
-        while True:
-            self.timer_events[match_id].clear()
-            try:
-                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120) 
-            except asyncio.TimeoutError:
-                # log de chat aqui
-                self.pass_turn(match_id)
+
         
       
     
