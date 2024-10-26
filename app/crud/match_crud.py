@@ -301,8 +301,9 @@ class MatchRepository:
             
             db.commit()
 
-            print(f"\n\n TURN self.timer_events = {self.timer_events}\n\n")
-            self.timer_events[match.match_id].set()
+            if match.match_id in self.timer_events:
+                self.timer_events[match.match_id].set()
+
             return board, shapes
         finally:
             db.close()
@@ -402,7 +403,7 @@ class MatchRepository:
         while True:
             self.timer_events[match_id].clear()
             try:
-                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=10)  # Wait for 2 minutes or until the event is set
+                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120) 
             except asyncio.TimeoutError:
                 # log de chat aqui
                 self.pass_turn(match_id)

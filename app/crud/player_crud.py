@@ -230,8 +230,9 @@ class PlayerRepository:
                 # borra el timer de la partida
                 from app.crud.match_crud import MatchRepository as MR
                 mr = MR()
-                del mr.timer_events[match.match_id]
-                del mr.timer_tasks[match.match_id]
+                if match.match_id in mr.timer_events and match.match_id in mr.timer_tasks:
+                    del mr.timer_events[match.match_id]
+                    del mr.timer_tasks[match.match_id]
 
                 db.delete(match)
                 db.commit()
