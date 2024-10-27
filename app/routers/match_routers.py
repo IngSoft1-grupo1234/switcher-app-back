@@ -19,14 +19,15 @@ async def create_match(new_match: MatchIn):
     playerRepo = PlayerRepository()
 
     player = playerRepo.get_player(new_match.host) # excepcion si no existe el host
-    db_match = matchRepo.create_match(match_name=new_match.match_name, max_players=new_match.max_players, host=new_match.host)
-    playerRepo.assign_match_to_player(new_match.host, db_match.match_id)
+    db_match = matchRepo.create_match(match_name=new_match.match_name, max_players=new_match.max_players, host=new_match.host, password=new_match.password)
+    playerRepo.assign_match_to_player(new_match.host, db_match.match_id, new_match.password)
     message = {"action": "create-game","data": {"match_id": db_match.match_id}}
     await player_manager.broadcast(json.dumps(message))
     return MatchOut(match_name=new_match.match_name, 
                     max_players=new_match.max_players, 
                     host=new_match.host,
                     match_id=db_match.match_id,
+                    password=new_match.password,
                     operation_result="Succesfully created!"
                     )
 

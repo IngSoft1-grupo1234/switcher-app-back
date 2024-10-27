@@ -7,6 +7,7 @@ class Match(Base):
     __tablename__ = "matches"
 
     match_id = Column(Integer, primary_key=True, autoincrement=True)
+    password = Column(String, nullable=False, default="")
     match_name = Column(String, nullable=False)
     max_players = Column(Integer, nullable=False)
     host = Column(Integer, nullable=False)

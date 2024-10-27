@@ -21,8 +21,8 @@ class MatchRepository:
         if not hasattr(self.__class__, 'timer_tasks'):
             self.__class__.timer_tasks = {}
 
-    def create_match(self, match_name, max_players, host) -> MatchModel:
-        db_match = MatchModel(match_name=match_name, max_players=max_players, host=host)
+    def create_match(self, match_name, max_players, host, password) -> MatchModel:
+        db_match = MatchModel(match_name=match_name, max_players=max_players, host=host, password=password)
 
         try:
             db = session()

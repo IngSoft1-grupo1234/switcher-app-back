@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, HTTPException
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
-from app.schemas.player_schemas import PlayerIn, PlayerOut
+from app.schemas.player_schemas import PlayerIn, PlayerOut, Password
 from app.websocket.websocket_endpoints import player_manager
 import json
 
@@ -24,12 +24,12 @@ async def get_player(player_id: int) -> PlayerOut:
 
 # asigna una partida a un jugador
 @router.put("/players/{player_idd}/AssignToMatch/{match_idd}", status_code=status.HTTP_204_NO_CONTENT)
-async def assign_match_to_player(player_idd: int, match_idd: int):
+async def assign_match_to_player(player_idd: int, match_idd: int, password: Password = Password(password="")):
     repo = PlayerRepository()
     repom = MatchRepository()
     
     # ya no es abominacion
-    repo.assign_match_to_player(player_id=player_idd, match_id=match_idd)
+    repo.assign_match_to_player(player_id=player_idd, match_id=match_idd, password=password.password)
     
 
     db_player = repo.get_player(player_id=player_idd)

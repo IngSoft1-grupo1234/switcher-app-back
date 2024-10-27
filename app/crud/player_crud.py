@@ -32,7 +32,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def assign_match_to_player(self, player_id, match_id):
+    def assign_match_to_player(self, player_id, match_id, password=""):
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
@@ -44,6 +44,9 @@ class PlayerRepository:
             if match.has_begun:
                 raise HTTPException(status_code=400, detail="Match has already begun.")
 
+            # password simple viste
+            if match.password != password:
+                raise HTTPException(status_code=401, detail="Incorrect password.")
             # Si el jugador no esta en la partida
             if player.match_id != match.match_id:
                 player.match_id = match.match_id
