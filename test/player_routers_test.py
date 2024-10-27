@@ -1,12 +1,13 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi import HTTPException
 from app.routers.player_routers import router
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.player_models import Player as PlayerModel
+
 
 
 client = TestClient(router)
@@ -102,13 +103,16 @@ def test_delete_player_not_found(mock_session):
             assert response.status_code == 404
             assert exc_info.value.detail == "Player not found."
 
+
 def test_use_shape_card():
     with patch.object(PlayerRepository, 'use_shape_card', return_value=None),\
-         patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"))),\
-         patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
+        patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"))),\
+        patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
         response = client.put("/players/use_shape_card/1")
         assert response.status_code == 204
 
+# patch('app.websocket.connection_manager.ConnectionManager.broadcast_to_id_list', new_callable=AsyncMock),\
+    #    patch('app.crud.player_crud.PlayerRepository.broadcast_message_to_id_list', new_callable=AsyncMock)
 def test_use_shape_card_not_found():
     with patch.object(PlayerRepository, 'use_shape_card', side_effect=HTTPException(status_code=404, detail="Shape card not found.")),\
          patch.object(ShapeCardRepository, 'get_shape_card', side_effect=HTTPException(status_code=404, detail="Shape card not found.")),\

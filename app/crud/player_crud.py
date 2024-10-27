@@ -37,7 +37,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def assign_match_to_player(self, player_id, match_id):
+    def assign_match_to_player(self, player_id, match_id, log = True):
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
@@ -60,11 +60,12 @@ class PlayerRepository:
                 db.commit()
 
                 # CHAT MESSAGE
-                player_ids = [player.player_id for player in match.players]
-                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has joined the game.",
-                                                                      message_type=messageType.PlayerJoins, 
-                                                                      match_id=player.match_id, 
-                                                                      ids=player_ids))
+                if log:
+                    player_ids = [player.player_id for player in match.players]
+                    asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has joined the game.",
+                                                                        message_type=messageType.PlayerJoins, 
+                                                                        match_id=player.match_id, 
+                                                                        ids=player_ids))
             else:
                 raise HTTPException(status_code=409, detail="Player is already in the match.")
             
@@ -75,7 +76,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def unassign_match_to_player(self, player_id): # si abandona jugador actual_turn se caga todo creo
+    def unassign_match_to_player(self, player_id, log = True): # si abandona jugador actual_turn se caga todo creo
         try:
             db = session()
             player = db.get(PlayerModel, player_id)
@@ -149,6 +150,9 @@ class PlayerRepository:
             # cancel match not started
             elif match.host == player.player_id:
                 player.match_id = None
+                for chat in match.chats:
+                    delete_chat = db.get(ChatModel, chat.chat_id)
+                    db.delete(delete_chat)
                 db.delete(match)
             # disconnect player from match not started
             else:
@@ -158,9 +162,10 @@ class PlayerRepository:
             db.commit()
 
             # CHAT MESSAGE
-            player_ids = [player.player_id for player in match.players]
-            if match:
-                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has left the game.",
+            if log: 
+                player_ids = [player.player_id for player in match.players]
+                if match:
+                    asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has left the game.",
                                                                       message_type=messageType.PlayerDisconnects, 
                                                                       match_id=match.match_id, 
                                                                       ids=player_ids))
@@ -180,7 +185,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def use_shape_card(self, shape_card_id):
+    def use_shape_card(self, shape_card_id, log = True):
         try:
             db = session()
             shape_card = db.get(ShapeCardModel, shape_card_id)
@@ -209,16 +214,17 @@ class PlayerRepository:
             db.commit()
 
              # CHAT MESSAGE
-            player_ids = [player.player_id for player in match.players]
-            asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has used a shape card.",
-                                                                  message_type=messageType.PlayerUsesShapeCard, 
-                                                                  match_id=player.match_id, 
-                                                                  ids=player_ids))
+            if log:
+                player_ids = [player.player_id for player in match.players]
+                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has used a shape card.",
+                                                                    message_type=messageType.PlayerUsesShapeCard, 
+                                                                    match_id=player.match_id, 
+                                                                    ids=player_ids))
         finally:
             db.close()
     
-
-    def winner_without_shape_card(self, player_id):
+    
+    def winner_without_shape_card(self, player_id, log = True):
         db = session()
         try:
             player = db.get(PlayerModel, player_id)
@@ -260,8 +266,8 @@ class PlayerRepository:
                 db.commit()
 
                 # CHAT MESSAGE
-                
-                asyncio.create_task(self.broadcast_message_to_id_list(content=f"{winner_username} has won the game.",
+                if log:
+                    asyncio.create_task(self.broadcast_message_to_id_list(content=f"{winner_username} has won the game.",
                                                                       message_type=messageType.PlayerWins,  
                                                                       match_id=player.match_id, 
                                                                       ids=player_ids))
@@ -287,7 +293,7 @@ class PlayerRepository:
         finally:
             db.close()
 
-    def player_send_message(self, player_id, content, time):
+    def player_send_message(self, player_id, content, time, log = True):
         try:
             db = session()
 
@@ -310,10 +316,11 @@ class PlayerRepository:
 
             content = f"{player.username}: {content}"
 
-            asyncio.create_task(self.broadcast_message_to_id_list(content=content, 
-                                                                  message_type=messageType.PlayerMessage,
-                                                                  match_id=player.match_id, 
-                                                                  ids=player_ids))
+            if log:
+                asyncio.create_task(self.broadcast_message_to_id_list(content=content, 
+                                                message_type=messageType.PlayerMessage,
+                                                match_id=player.match_id, 
+                                                ids=player_ids))
             
         finally:
             db.close()

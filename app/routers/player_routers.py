@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, HTTPException
 from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
-from app.schemas.player_schemas import PlayerIn, PlayerOut
+from app.schemas.player_schemas import PlayerIn, PlayerOut, LogIn
 from app.schemas.chat_schemas import ChatIn
 from app.websocket.websocket_endpoints import player_manager
 import json

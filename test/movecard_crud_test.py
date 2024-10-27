@@ -370,7 +370,7 @@ def test_soft_move(mock_session, move_card_repo):
     with patch.object(move_card_repo, "get_move_cards_by_player", return_value=[card]):
         # valido
         
-        move_card_repo.soft_move(player_id=1, move_card_id=1, movement_info=movement_info)
+        move_card_repo.soft_move(player_id=1, move_card_id=1, movement_info=movement_info, log=False)
         
         error_cases = [
             (1, 1, movement_info, 400, "Move card already used"),
@@ -381,14 +381,14 @@ def test_soft_move(mock_session, move_card_repo):
 
         for player_id, move_card_id, movement_info, status_code, detail in error_cases:
             with pytest.raises(HTTPException) as excinfo:
-                move_card_repo.soft_move(player_id=player_id, move_card_id=move_card_id, movement_info=movement_info)
+                move_card_repo.soft_move(player_id=player_id, move_card_id=move_card_id, movement_info=movement_info, log=False)
                 assert excinfo.value.status_code == status_code
                 assert excinfo.value.detail == detail
 
         with pytest.raises(HTTPException) as excinfo:
             mock_player.matches.current_turn = 2
             mock_match.current_turn = 2
-            move_card_repo.soft_move(player_id=1, move_card_id=1, movement_info=movement_info)
+            move_card_repo.soft_move(player_id=1, move_card_id=1, movement_info=movement_info, log=False)
             assert excinfo.value.status_code == 400
             assert excinfo.value.detail == "Not player's turn"
 
@@ -427,7 +427,7 @@ def test_cancel_soft_move(mock_session, move_card_repo):
         mock_db.get.side_effect = mock_get
         
         # Call the function with a valid move card
-        move_card_repo.cancel_soft_move(player_id=1)
+        move_card_repo.cancel_soft_move(player_id=1, log=False)
 
 
 def test_get_amount_of_move_cards_by_player(mock_session, move_card_repo):

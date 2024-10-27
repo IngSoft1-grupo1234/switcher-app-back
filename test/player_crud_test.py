@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
@@ -57,7 +57,7 @@ def test_assign_match_to_player(mock_session, player_repo):
         mock_db.commit = MagicMock()
         mock_db.close = MagicMock()
 
-        result = player_repo.assign_match_to_player(1, 1)
+        result = player_repo.assign_match_to_player(1, 1, log=False)
 
         mock_db.get.assert_any_call(PlayerModel, 1)
         mock_db.commit.assert_called_once()
@@ -96,7 +96,7 @@ def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db.close = MagicMock()
 
     with pytest.raises(HTTPException) as exc_info:
-        player_repo.assign_match_to_player(1, 1)
+        player_repo.assign_match_to_player(1, 1, log=False)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
     assert exc_info.value.detail == "Match is full."
@@ -110,7 +110,7 @@ def test_unassign_match_to_player(mock_session, player_repo):
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
     with patch('app.crud.match_crud.session', return_value=mock_db):
-        result = player_repo.unassign_match_to_player(1)
+        result = player_repo.unassign_match_to_player(1, log=False)
         
         mock_db.get.assert_any_call(PlayerModel, 1)
         mock_db.commit.assert_called_once()
@@ -140,8 +140,8 @@ def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_db.get.side_effect = [
         ShapeCardModel(shape_card_id=1, player_id=1, is_active=True),  # Para ShapeCardModel
-        PlayerModel(player_id=1, match_id=1),  # Para PlayerModel
-        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]))  # Para MatchModel
+        PlayerModel(player_id=1, match_id=1, matches=MatchModel(current_turn=1)),  # Para PlayerModel
+        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]), current_turn=1)  # Para MatchModel
     ]
 
     mock_db.commit = MagicMock()
@@ -150,7 +150,7 @@ def test_use_shape_card(mock_session, player_repo):
     with patch('app.crud.shapecard_crud.ShapeCardRepository.get_shape_card') as mock_shape_card,\
             patch('app.crud.shapecard_crud.ShapeCardRepository.set_active_shape_card') as mock_set_active_shape_card:
             mock_shape_card.return_value = MagicMock()
-            player_repo.use_shape_card(1)
+            player_repo.use_shape_card(1, log=False)
 
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
@@ -197,7 +197,8 @@ def test_winner_without_shape_card(mock_session, player_repo):
     mock_db.commit = MagicMock()
     mock_db.close = MagicMock()
     
-    result = player_repo.winner_without_shape_card(1)
+    
+    result = player_repo.winner_without_shape_card(1, log=False)
 
     mock_db.get.assert_any_call(PlayerModel, 1)
     mock_db.get.assert_any_call(MatchModel, 1)

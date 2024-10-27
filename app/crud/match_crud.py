@@ -100,7 +100,7 @@ class MatchRepository:
         finally:
             db.close()
 
-    def start_match(self, match_id):
+    def start_match(self, match_id, log = True):
         db = session()
         move_card_repo = MoveCardRepository()
         shape_card_repo = ShapeCardRepository()
@@ -151,10 +151,11 @@ class MatchRepository:
 
             db.commit()
 
-            player_ids = [player.player_id for player in match.players]
+            if log:
+                player_ids = [player.player_id for player in match.players]
 
-            player_repo = PlayerRepository()
-            asyncio.create_task(player_repo.broadcast_message_to_id_list(content="The Host has started the game.", 
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content="The Host has started the game.", 
                                                                   message_type=messageType.PlayerStartsGame, 
                                                                   match_id=match.match_id, 
                                                                   ids=player_ids))
@@ -245,7 +246,7 @@ class MatchRepository:
 
 
 
-    def pass_turn(self, match_id):
+    def pass_turn(self, match_id, log = True):
         db = session()
         move_card_repo = MoveCardRepository()
         try:
@@ -301,10 +302,11 @@ class MatchRepository:
             
             db.commit()
 
-            player_ids = [player.player_id for player in match.players]
+            if log:
+                player_ids = [player.player_id for player in match.players]
 
-            player_repo = PlayerRepository()
-            asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{current_player.username} has passed the turn.", 
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{current_player.username} has passed the turn.", 
                                                                   message_type=messageType.PlayerPassTurn, 
                                                                   match_id=current_player.match_id, 
                                                                   ids=player_ids))

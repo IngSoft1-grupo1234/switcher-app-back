@@ -123,7 +123,7 @@ class MoveCardRepository:
         finally:
             db.close()
     
-    def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn): # fijarse si es el turno del jugador!!!
+    def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn, log = True): # fijarse si es el turno del jugador!!!
         player_cards = self.get_move_cards_by_player(player_id)
         move_card_ids = [card.move_card_id for card in player_cards]
         if move_card_id not in move_card_ids:
@@ -194,12 +194,13 @@ class MoveCardRepository:
             ShapeDetector().pretty_print_result(shapes)
 
             # MESSAGE
-            player_ids = [player.player_id for player in match.players]
+            if log:
+                player_ids = [player.player_id for player in match.players]
 
-            player_repo = PlayerRepository()
-            asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} used a move card.", 
-                                                                  message_type=messageType.PlayerUsesMoveCard, 
-                                                                  match_id=match.match_id, 
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} used a move card.", 
+                                                                    message_type=messageType.PlayerUsesMoveCard, 
+                                                                    match_id=match.match_id, 
                                                                   ids=player_ids))
             
             return board, shapes
@@ -266,7 +267,7 @@ class MoveCardRepository:
             db.close()
         
 
-    def cancel_soft_move(self, player_id: int):
+    def cancel_soft_move(self, player_id: int, log = True):
         db = session()
         try:
             player = db.get(PlayerModel,player_id)
@@ -303,13 +304,14 @@ class MoveCardRepository:
             ShapeDetector().pretty_print_result(shapes)
 
             # MESSAGE
-            player_ids = [player.player_id for player in player.matches.players]
+            if log:
+                player_ids = [player.player_id for player in player.matches.players]
 
-            player_repo = PlayerRepository()
-            asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} canceled a move.", 
-                                                                  message_type=messageType.PlayerCancelMove, 
-                                                                  match_id=player.matches.match_id, 
-                                                                  ids=player_ids))
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} canceled a move.", 
+                                                                    message_type=messageType.PlayerCancelMove, 
+                                                                    match_id=player.matches.match_id, 
+                                                                    ids=player_ids))
 
             return board, shapes
             
