@@ -130,7 +130,7 @@ def test_assign_match_to_player_bad_password(mock_session, player_repo):
 
         with pytest.raises(HTTPException) as exc_info:
             player_repo.assign_match_to_player(3, 1, "")
-            assert exc_info.value.detail == "Incorrezazaazassword."
+            assert exc_info.value.detail == "Incorrect password."
 
         mock_db.get.assert_any_call(PlayerModel, 3)
     
