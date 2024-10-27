@@ -127,7 +127,7 @@ async def get_match_start_info(match_id: int):
         players_cards = shapecard_repo.get_shape_cards_by_player(player)
         figure_cards_list[player] = []
         for card in players_cards:
-            figure_cards_list[player].append(card.shape_card_type.value)
+            figure_cards_list[player].append({"id": card.shape_card_id, "type": card.shape_card_type.value})
     return {"turns": turns, "board": board, "move_cards": move_cards_list, "figure_cards": figure_cards_list, "shapes": shapes}
 
 
