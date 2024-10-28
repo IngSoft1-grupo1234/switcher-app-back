@@ -8,6 +8,7 @@ from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.database import session
 from fastapi import HTTPException
 
+
 class ShapeCardRepository:
     def create_shape_card(self, shape_card_type: ShapeCardType):
         db = session()

@@ -4,6 +4,7 @@ from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.schemas.player_schemas import PlayerIn, PlayerOut
 from app.websocket.websocket_endpoints import player_manager
+from app.schemas.shapecard_schemas import UsedShapeSchema
 import json
 
 router = APIRouter(tags=["players"])
@@ -66,11 +67,11 @@ async def delete_player(player_id: int):
 
 
 @router.put("/players/use_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def use_shape_card(shape_card_id: int):
+async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
     repo_player = PlayerRepository()
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
-    repo_player.use_shape_card(shape_card_id=shape_card_id)
+    repo_player.use_shape_card(shape_card_id=shape_card_id, color=usedshape.color, location=usedshape.location)
     player_id = shape_card.player_id
 
     message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type.value}}

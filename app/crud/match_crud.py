@@ -296,6 +296,9 @@ class MatchRepository:
             next_turn = turns[next_index]
             
             
+            print(f"Shapes RAAAAW: {shapes}")
+            used_color_shapes = [shape['positions'] for shape in shapes.values() if shape['color'] == match.prohibited_color]
+            match.prohibited_shapes = json.dumps(used_color_shapes)
 
             match.current_turn = next_turn
             
@@ -403,7 +406,7 @@ class MatchRepository:
         while True:
             self.timer_events[match_id].clear()
             try:
-                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120) 
+                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=10000) # cambiar esto a 120, cambiado por testing 
             except asyncio.TimeoutError:
                 # log de chat aqui
                 self.pass_turn(match_id)

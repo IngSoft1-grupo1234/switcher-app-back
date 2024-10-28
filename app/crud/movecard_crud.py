@@ -314,25 +314,25 @@ class MoveCardRepository:
             raise HTTPException(status_code=400, detail="Invalid orientation")
         
         movements = {
-            2: { # diagonal salto una casilla
+            2: { # Salto diagonal de una casilla
                 "up": [-2, 2],
                 "down": [2, -2],
                 "left": [-2, -2],
                 "right": [2, 2]
             },
-            4: { # recto salto una casilla
+            4: { # Salto recto de una casilla
                 "up": [-2, 0],
                 "down": [2, 0],
                 "left": [0, -2],
                 "right": [0, 2]
             },
-            3: { # recto sin salto
+            3: { # Recto sin saltar
                 "up": [-1, 0],
                 "down": [1, 0],
                 "left": [0, -1],
                 "right": [0, 1]
             },
-            1: { # diagonal sin salto
+            1: { # Diagonal sin saltar
                 "up": [-1, 1],
                 "down": [1, -1],
                 "left": [-1, -1],
@@ -350,7 +350,7 @@ class MoveCardRepository:
                 "left": [1, -2],
                 "right": [-1, 2]
             },
-            7: { # recto salto cuatro casillas
+            7: { # Salto recto de cuatro casillas
                 "up": [-4, 0],
                 "down": [4, 0],
                 "left": [0, -4],
@@ -365,12 +365,12 @@ class MoveCardRepository:
         
     def imprimir_tipo_de_movimiento(self, tipo_de_movimiento: int):
         movimientos = {
-            1: "Salto diagonal de una casilla",
-            2: "Salto recto de una casilla",
+            1: "Diagonal sin saltar",
+            2: "Salto diagonal de una casilla",
             3: "Recto sin saltar",
-            4: "Diagonal sin saltar",
-            5: "L invertida",
-            6: "L",
+            4: "Salto recto de una casilla",
+            5: "L",
+            6: "L invertida",
             7: "Salto recto de cuatro casillas"
         }
         descripcion_movimiento = movimientos.get(tipo_de_movimiento, "Tipo de movimiento inválido")

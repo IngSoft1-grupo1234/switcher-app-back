@@ -131,7 +131,7 @@ def test_pass_turn(match_repo, mock_session, player_mock_session):
     mock_match = MatchModel(match_id=1, match_name="Match1", max_players=4, host="1", player_count=2, current_turn=1, has_begun=True, players=[
         PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([])),
         PlayerModel(player_id=2, username="Player2", match_id = 1, used_cards = json.dumps([]))
-    ],  turns=json.dumps([1, 2]), board = json.dumps(pass_turn_return_board))
+    ],  turns=json.dumps([1, 2]), board = json.dumps(pass_turn_return_board), prohibited_color="")
     mock_db.query.return_value.get.return_value = mock_match
     mock_db.get.return_value = mock_match
 

@@ -10,4 +10,9 @@ class MoveCardOut (BaseModel):
     move_card_type : int
     move_card_difficulty : int
     operation_result: str
+    model_config=ConfigDict(from_attributes=True) # por que estan estas cosas aca xD
+
+class UsedShapeSchema (BaseModel):
+    color: str
+    location: str
     model_config=ConfigDict(from_attributes=True)

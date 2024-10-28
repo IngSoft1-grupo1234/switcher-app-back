@@ -8,6 +8,7 @@ from app.database import session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import json
+from app.shape_detection.DFS import ShapeDetector
 
 class PlayerRepository:
     def create_player(self, username) -> PlayerModel:
@@ -165,7 +166,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def use_shape_card(self, shape_card_id):
+    def use_shape_card(self, shape_card_id, color, location):
         try:
             db = session()
             shape_card = db.get(ShapeCardModel, shape_card_id)
@@ -183,14 +184,24 @@ class PlayerRepository:
             match = db.get(MatchModel, match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            turns = json.loads(match.turns)
-            if player.player_id != turns[0]:
+            
+            if player.player_id != match.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
+            
+            if match.prohibited_color == color:
+                raise HTTPException(status_code=400, detail="Color is prohibited.")
+            
+            prohibited_shapes = json.loads(match.prohibited_shapes)
+            if any(location in shape for shape in prohibited_shapes): # si location esta dentro de alguna figura prohibida
+                raise HTTPException(status_code=400, detail="Shape is prohibited.")
 
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
             player.has_used_shape_card = True
+
+            match.prohibited_color = color
+
             db.commit()
         finally:
             db.close()

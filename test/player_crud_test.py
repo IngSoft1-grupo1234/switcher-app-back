@@ -136,12 +136,22 @@ def test_delete_player(mock_session, player_repo):
     mock_db.commit.assert_called_once()
 
 
+board = [
+    ["r", "g", "b", "y", "r", "g"],
+    ["r", "r", "y", "r", "g", "b"],
+    ["r", "y", "r", "b", "b", "y"],
+    ["y", "r", "g", "g", "y", "r"],
+    ["r", "g", "g", "y", "r", "g"],
+    ["g", "b", "y", "r", "g", "b"]
+]
+
 def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
+    match = MatchModel(match_id=1, turns=json.dumps([1, 2, 3]), current_turn=1, board=board, prohibited_color="", prohibited_shapes="[]")
     mock_db.get.side_effect = [
         ShapeCardModel(shape_card_id=1, player_id=1, is_active=True),  # Para ShapeCardModel
-        PlayerModel(player_id=1, match_id=1),  # Para PlayerModel
-        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]))  # Para MatchModel
+        PlayerModel(player_id=1, match_id=1, matches=match),  # Para PlayerModel
+        match  # Para MatchModel
     ]
 
     mock_db.commit = MagicMock()
@@ -150,7 +160,7 @@ def test_use_shape_card(mock_session, player_repo):
     with patch('app.crud.shapecard_crud.ShapeCardRepository.get_shape_card') as mock_shape_card,\
             patch('app.crud.shapecard_crud.ShapeCardRepository.set_active_shape_card') as mock_set_active_shape_card:
             mock_shape_card.return_value = MagicMock()
-            player_repo.use_shape_card(1)
+            player_repo.use_shape_card(1, "r", "(1,0)")
 
     mock_db.commit.assert_called_once()
     mock_db.close.assert_called_once()
