@@ -185,7 +185,6 @@ class PlayerRepository:
             match = db.get(MatchModel, match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            turns = json.loads(match.turns)
             if player.player_id != match.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
 
@@ -193,6 +192,22 @@ class PlayerRepository:
             shape_card.player_id = None
             db.delete(shape_card)
             player.has_used_shape_card = True
+
+
+            # Unblock shape card if it is possible
+            amount_active_shape_cards = 0
+            has_block_card = False
+
+            for card in player.shape_cards:
+                if card.is_active:
+                    amount_active_shape_cards += 1
+                if card.is_blocked:
+                    has_block_card = True
+                    block_card = card
+
+            if amount_active_shape_cards == 1 and has_block_card:
+                block_card.is_blocked = False
+
             db.commit()
         finally:
             db.close()
