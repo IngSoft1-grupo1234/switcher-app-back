@@ -141,7 +141,7 @@ def test_use_shape_card(mock_session, player_repo):
     mock_db.get.side_effect = [
         ShapeCardModel(shape_card_id=1, player_id=1, is_active=True),  # Para ShapeCardModel
         PlayerModel(player_id=1, match_id=1),  # Para PlayerModel
-        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]))  # Para MatchModel
+        MatchModel(match_id=1, turns=json.dumps([1, 2, 3]),current_turn = 1)  # Para MatchModel
     ]
 
     mock_db.commit = MagicMock()

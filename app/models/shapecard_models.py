@@ -44,4 +44,5 @@ class ShapeCard(Base):
     shape_card_difficulty = Column(SQLAEnum(ShapeCardDifficulty), nullable=False)
     player_id = Column(Integer, ForeignKey('players.player_id'), nullable=True)
     is_active = Column(Boolean, default=False)
+    is_blocked = Column(Boolean, default=False)
     players = relationship("Player", back_populates="shape_cards")
