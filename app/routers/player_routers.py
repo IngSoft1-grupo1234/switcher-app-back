@@ -79,12 +79,15 @@ async def use_shape_card(shape_card_id: int):
     repo_player.use_shape_card(shape_card_id=shape_card_id)
     player_id = shape_card.player_id
 
-    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type.value}}
+    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id,
+                                                    "shape_card_type": shape_card.shape_card_type.value,
+                                                    "player_id": player_id}}
     print(f"SHAPE CARD USED MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
     
     winner_json = repo_player.winner_without_shape_card(player_id=player_id)
     if winner_json:
-        winner_message = {"action": "game-won","data": {"playername": winner_json["winner_username"], "player_id": winner_json["winner_player_id"]}}
+        winner_message = {"action": "game-won","data": {"playername": winner_json["winner_username"],
+                                                        "player_id": winner_json["winner_player_id"]}}
         print(f"WINNER MESSAGE: {winner_message}")
         await player_manager.broadcast(json.dumps(winner_message))
