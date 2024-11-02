@@ -294,11 +294,6 @@ class MatchRepository:
             current_index = turns.index(player_turn)
             next_index = (current_index + 1) % len(turns)
             next_turn = turns[next_index]
-            
-            
-            print(f"Shapes RAAAAW: {shapes}")
-            used_color_shapes = [shape['positions'] for shape in shapes.values() if shape['color'] == match.prohibited_color]
-            match.prohibited_shapes = json.dumps(used_color_shapes)
 
             match.current_turn = next_turn
             

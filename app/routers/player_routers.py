@@ -69,15 +69,26 @@ async def delete_player(player_id: int):
 @router.put("/players/use_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
     repo_player = PlayerRepository()
+    match_repo = MatchRepository()
+
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
-    repo_player.use_shape_card(shape_card_id=shape_card_id, color=usedshape.color, location=usedshape.location)
+    board, shapes = repo_player.use_shape_card(shape_card_id=shape_card_id, color=usedshape.color, location=usedshape.location)
     player_id = shape_card.player_id
+
+    player = repo_player.get_player(player_id=player_id)
+    match = match_repo.get_match(player.match_id)
 
     message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type.value}}
     print(f"SHAPE CARD USED MESSAGE: {message}")
-    await player_manager.broadcast(json.dumps(message))
+    await player_manager.broadcast_to_id_list(json.dumps(message), match.turns)
     
+    
+    
+    message = {"action": "update-board", "data": {"board": board, "shapes": shapes}}
+    print(f"UPDATE BOARD MESSAGE from shape card use: {message}")
+    await player_manager.broadcast_to_id_list(json.dumps(message), match.turns)
+
     winner_json = repo_player.winner_without_shape_card(player_id=player_id)
     if winner_json:
         winner_message = {"action": "game-won","data": {"playername": winner_json["winner_username"], "player_id": winner_json["winner_player_id"]}}

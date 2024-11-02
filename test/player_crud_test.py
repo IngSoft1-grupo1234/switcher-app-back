@@ -136,14 +136,14 @@ def test_delete_player(mock_session, player_repo):
     mock_db.commit.assert_called_once()
 
 
-board = [
+board = json.dumps([
     ["r", "g", "b", "y", "r", "g"],
     ["r", "r", "y", "r", "g", "b"],
     ["r", "y", "r", "b", "b", "y"],
     ["y", "r", "g", "g", "y", "r"],
     ["r", "g", "g", "y", "r", "g"],
     ["g", "b", "y", "r", "g", "b"]
-]
+])
 
 def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value

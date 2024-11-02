@@ -17,6 +17,7 @@ class Match(Base):
     board = Column(Text, nullable=True)
     prohibited_color = Column(Text, default="")
     prohibited_shapes = Column(Text, default="[]")
+    no_longer_prohibited_shapes = Column(Text, default="[]")
     players = relationship("Player", back_populates="matches")
     move_cards = relationship("MoveCard", back_populates="matches")
     
