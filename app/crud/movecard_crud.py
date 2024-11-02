@@ -365,12 +365,12 @@ class MoveCardRepository:
         
     def imprimir_tipo_de_movimiento(self, tipo_de_movimiento: int):
         movimientos = {
-            1: "Salto diagonal de una casilla",
-            2: "Salto recto de una casilla",
+            1: "Diagonal sin saltar",
+            2: "Salto diagonal de una casilla",
             3: "Recto sin saltar",
-            4: "Diagonal sin saltar",
-            5: "L invertida",
-            6: "L",
+            4: "Salto recto de una casilla",
+            5: "L",
+            6: "L invertida",
             7: "Salto recto de cuatro casillas"
         }
         descripcion_movimiento = movimientos.get(tipo_de_movimiento, "Tipo de movimiento inválido")
