@@ -293,11 +293,9 @@ class PlayerRepository:
         finally:
             db.close()
 
-    def player_send_message(self, player_id, content, time, log = True):
+    def player_send_message(self, player_id, content, log = True):
         try:
             db = session()
-
-
 
             player = db.get(PlayerModel, player_id)
             if not player:
@@ -308,9 +306,6 @@ class PlayerRepository:
             match = db.get(MatchModel, player.match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            
-            if not self.__validate_time_format(time):
-                raise HTTPException(status_code=400, detail="Invalid time format.")
 
             player_ids = [player.player_id for player in match.players]
 
@@ -325,13 +320,6 @@ class PlayerRepository:
         finally:
             db.close()
 
-    
-    def __validate_time_format(self, time_str):
-        try:
-            datetime.strptime(time_str, "%H:%M")
-            return True
-        except ValueError:
-            return False
         
     async def broadcast_message_to_id_list(self, content: str, message_type: messageType, match_id: int, ids: list[int]):
         time = datetime.now().strftime("%H:%M")

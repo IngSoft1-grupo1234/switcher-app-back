@@ -87,5 +87,5 @@ async def use_shape_card(shape_card_id: int):
 @router.put("/players/{player_id}/send_message", status_code=status.HTTP_204_NO_CONTENT)
 async def send_message(player_id: int, message_info: ChatIn):
     repo = PlayerRepository()
-    repo.player_send_message(player_id=player_id, message=message_info.content, time=message_info.time)
+    repo.player_send_message(player_id=player_id, message=message_info.content)
     # player_cruds hace el broadcast_to_id_list

@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from app.crud.player_crud import PlayerRepository
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
@@ -164,7 +164,7 @@ def test_winner_without_shape_card(mock_session, player_repo):
     mock_other_player.shape_cards = [ShapeCardModel(shape_card_id=1)]
     
     mock_match = MatchModel(match_id=1, has_begun=True, host=1, players=[mock_player, mock_other_player], player_count=2)
-    mock_player.match = mock_match
+    mock_player.matches = mock_match
     
     mock_moves = [MoveCardModel(move_card_id=1, match_id=1, player_id=1),
                   MoveCardModel(move_card_id=2, match_id=1, player_id=2)]
@@ -208,6 +208,30 @@ def test_winner_without_shape_card(mock_session, player_repo):
     mock_db.close.assert_called_once() 
 
     assert result == {"winner_username": "test_user", "winner_player_id": 1}
+
+@pytest.mark.asyncio
+async def test_player_message(mock_session, player_repo):
+    mock_db = mock_session.return_value
+    mock_player = PlayerModel(player_id=1, username="test_user", match_id=1)
+    mock_match = MatchModel(match_id=1, has_begun=True, host=1, players=[mock_player], player_count=1, chats=[])
+
+    def mock_get(model, id):
+        if model == PlayerModel and id == 1:
+            return mock_player
+        elif model == MatchModel and id == 1:
+            return mock_match
+        return None
+    
+    mock_db.get.side_effect = mock_get
+    mock_db.add = MagicMock()
+    mock_db.commit = MagicMock()
+    mock_db.close = MagicMock()
+    
+    player_repo.player_send_message(1, "Me encanta el testing, me encanta estar 5 horas arreglando una linea de codigo.")
+
+    mock_db.get.assert_any_call(PlayerModel, 1)
+    mock_db.get.assert_any_call(MatchModel, 1)
+
 
 
 
