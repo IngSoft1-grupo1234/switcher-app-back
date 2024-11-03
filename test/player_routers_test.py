@@ -103,7 +103,7 @@ def test_delete_player_not_found(mock_session):
             assert exc_info.value.detail == "Player not found."
 
 def test_use_shape_card():
-    with patch.object(PlayerRepository, 'use_shape_card', return_value=None),\
+    with patch.object(PlayerRepository, 'use_shape_card', return_value=([], {})),\
          patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"))),\
          patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
         response = client.put("/players/use_shape_card/1", json={"color":"r", "location":"(1,1)"})

@@ -304,6 +304,7 @@ def test_confirm_move(mock_session, move_card_repo):
     mock_match = MagicMock()
     board = [[random.choice(['r', 'g', 'b', 'y']) for _ in range(6)] for _ in range(6)]
     mock_match.board = json.dumps(board)
+    mock_match.prohibited_shapes = "[]"
 
     mock_move_card = MagicMock()
     mock_move_card.move_card_type.value = 1
@@ -343,6 +344,7 @@ def test_soft_move(mock_session, move_card_repo):
     board = [[random.choice(['r', 'g', 'b', 'y']) for _ in range(6)] for _ in range(6)]
     mock_match.board = json.dumps(board)
     mock_match.current_turn = 1
+    mock_match.prohibited_shapes = "[]"
 
     card = MoveCardModel(move_card_id=1, 
                          move_card_type= MoveCardType.MOV1, 
@@ -410,7 +412,7 @@ def test_cancel_soft_move(mock_session, move_card_repo):
         mock_player = PlayerModel(player_id=1, 
                                   match_id=1, 
                                   used_cards=json.dumps([1]),
-                                  matches=MatchModel(current_turn=1, board=json.dumps(board)),
+                                  matches=MatchModel(current_turn=1, board=json.dumps(board), prohibited_shapes="[]"),
                                   move_cards = [mock_move_card]
                                   )
         
