@@ -32,7 +32,7 @@ SHAPE_TYPES = {
                                 'SHAPE_1_D' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row-1,col+1), (row-2,col+1)],
                                 'SHAPE_2_D' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row-1,col+1), (row-2,col+1)],
                                 'SHAPE_4_D' : lambda row, col : [(row, col), (row,col+1), (row-1,col+1), (row-1,col+2), (row-2,col+2)],
-                                'SHAPE_6_D' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row+1,col+2), (row+2,col+2)],
+                                'SHAPE_6_D' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row-1,col+2), (row-2,col+2)],
                                 'SHAPE_11_D' : lambda row, col : [(row, col), (row,col+1), (row-1,col+1), (row-2,col+1), (row-1,col+2)],
                                 'SHAPE_12_B' : lambda row, col : [(row, col), (row,col+1), (row-1,col+1), (row-2,col+1), (row-2,col+2)]
                             },
@@ -61,11 +61,11 @@ SHAPE_TYPES = {
 
 
                 (0,3,1) :   {   
-                                'SHAPE_3_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row+1,col+2), (row+1,col+3)],
-                                'SHAPE_3_C' : lambda row, col : [(row, col), (row,col+1), (row+1,col+1), (row+1,col+2), (row+1,col+3)],
-                                'SHAPE_8_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row+1,col+3)],
-                                'SHAPE_13_C' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row+1,col+1)],
-                                'SHAPE_14_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row+1,col+2)]
+                                'SHAPE_3_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row-1,col+2), (row-1,col+3)],
+                                'SHAPE_3_C' : lambda row, col : [(row, col), (row,col+1), (row-1,col+1), (row-1,col+2), (row-1,col+3)],
+                                'SHAPE_8_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row-1,col+3)],
+                                'SHAPE_13_C' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row-1,col+1)],
+                                'SHAPE_14_A' : lambda row, col : [(row, col), (row,col+1), (row,col+2), (row,col+3), (row-1,col+2)]
                             },
 
                             
