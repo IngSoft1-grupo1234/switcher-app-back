@@ -7,20 +7,15 @@ from app.crud.movecard_crud import MoveCardRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
+from app.models.chat_models import messageType
+import asyncio
+from app.crud.player_crud import PlayerRepository 
 from app.database import session
 from app.shape_detection.DFS import ShapeDetector
 import random
 import json
-import asyncio
 
 class MatchRepository:
-    def __init__(self):
-        # ESTO SE GUARDA EN TODOS LAS INSTANCIAS DE ESTA CLASE WUOOOOO UAUWAUAWUWAU
-        if not hasattr(self.__class__, 'timer_events'):
-            self.__class__.timer_events = {}
-        if not hasattr(self.__class__, 'timer_tasks'):
-            self.__class__.timer_tasks = {}
-
     def create_match(self, match_name, max_players, host) -> MatchModel:
         db_match = MatchModel(match_name=match_name, max_players=max_players, host=host)
 
@@ -91,7 +86,7 @@ class MatchRepository:
             "board": match.board
         }
 
-    def delete_match(self, match_id):
+    def delete_match(self, match_id): # nunca usar esto, muerte instantanea
         db = session()
         try:
             match = db.query(MatchModel).get(match_id)
@@ -105,7 +100,7 @@ class MatchRepository:
         finally:
             db.close()
 
-    def start_match(self, match_id):
+    def start_match(self, match_id, log = True):
         db = session()
         move_card_repo = MoveCardRepository()
         shape_card_repo = ShapeCardRepository()
@@ -156,9 +151,15 @@ class MatchRepository:
 
             db.commit()
 
-            self.timer_events[match.match_id] = asyncio.Event()
-            self.timer_tasks[match.match_id] = asyncio.create_task(self.timer(match_id))
-            print(f"\n\n START self.timer_events = {self.timer_events}\n\n")
+            if log:
+                player_ids = [player.player_id for player in match.players]
+
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content="The Host has started the game.", 
+                                                                  message_type=messageType.PlayerStartsGame, 
+                                                                  match_id=match.match_id, 
+                                                                  ids=player_ids))
+            
             return {
                 "turns": shuffled_turns,
                 "board": board,
@@ -245,7 +246,7 @@ class MatchRepository:
 
 
 
-    def pass_turn(self, match_id):
+    def pass_turn(self, match_id, log = True):
         db = session()
         move_card_repo = MoveCardRepository()
         try:
@@ -301,9 +302,14 @@ class MatchRepository:
             
             db.commit()
 
-            if match.match_id in self.timer_events:
-                self.timer_events[match.match_id].set()
+            if log:
+                player_ids = [player.player_id for player in match.players]
 
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{current_player.username} has passed the turn.", 
+                                                                  message_type=messageType.PlayerPassTurn, 
+                                                                  match_id=current_player.match_id, 
+                                                                  ids=player_ids))
             return board, shapes
         finally:
             db.close()
@@ -399,14 +405,7 @@ class MatchRepository:
         finally:
             db.close()
     
-    async def timer(self, match_id):
-        while True:
-            self.timer_events[match_id].clear()
-            try:
-                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120) 
-            except asyncio.TimeoutError:
-                # log de chat aqui
-                self.pass_turn(match_id)
+
         
       
     

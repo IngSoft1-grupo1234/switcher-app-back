@@ -5,9 +5,12 @@ from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.models.match_models import Match as MatchModel
+from app.models.chat_models import messageType
 from app.database import session
 from fastapi import HTTPException
 import json
+import asyncio
+from app.crud.player_crud import PlayerRepository
 from app.shape_detection.DFS import ShapeDetector
 
 from app.crud.shapecard_crud import ShapeCardRepository
@@ -120,7 +123,7 @@ class MoveCardRepository:
         finally:
             db.close()
     
-    def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn): # fijarse si es el turno del jugador!!!
+    def soft_move(self, player_id: int, move_card_id: int, movement_info: MoveCardIn, log = True): # fijarse si es el turno del jugador!!!
         player_cards = self.get_move_cards_by_player(player_id)
         move_card_ids = [card.move_card_id for card in player_cards]
         if move_card_id not in move_card_ids:
@@ -185,11 +188,21 @@ class MoveCardRepository:
                     print(f"{cards.move_card_id} - {move_card_type_str}")
             self.pretty_print_board(board)
         
-        
+
             db.commit() # si el movimiento no es valido salta excepcion en apply_move_card
             shapes = ShapeDetector().test_shape_fitting(board)
             ShapeDetector().pretty_print_result(shapes)
 
+            # MESSAGE
+            if log:
+                player_ids = [player.player_id for player in match.players]
+
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} used a move card.", 
+                                                                    message_type=messageType.PlayerUsesMoveCard, 
+                                                                    match_id=match.match_id, 
+                                                                  ids=player_ids))
+            
             return board, shapes
         finally:
             db.close()
@@ -254,7 +267,7 @@ class MoveCardRepository:
             db.close()
         
 
-    def cancel_soft_move(self, player_id: int):
+    def cancel_soft_move(self, player_id: int, log = True):
         db = session()
         try:
             player = db.get(PlayerModel,player_id)
@@ -289,6 +302,16 @@ class MoveCardRepository:
             self.pretty_print_board(board)
             shapes = ShapeDetector().test_shape_fitting(board)
             ShapeDetector().pretty_print_result(shapes)
+
+            # MESSAGE
+            if log:
+                player_ids = [player.player_id for player in player.matches.players]
+
+                player_repo = PlayerRepository()
+                asyncio.create_task(player_repo.broadcast_message_to_id_list(content=f"{player.username} canceled a move.", 
+                                                                    message_type=messageType.PlayerCancelMove, 
+                                                                    match_id=player.matches.match_id, 
+                                                                    ids=player_ids))
 
             return board, shapes
             
