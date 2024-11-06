@@ -10,5 +10,9 @@ class PlayerOut(BaseModel):
     operation_result: str
     model_config=ConfigDict(from_attributes=True)
 
+class Password(BaseModel):
+    password: str
+    model_config=ConfigDict(from_attributes=True)
+
 class LogIn(BaseModel):
     log: bool

@@ -34,8 +34,9 @@ def test_create_match(match_repo, mock_session):
     match_name = "Test Match"
     max_players = 4
     host = "Host1"
+    password = ""
 
-    match = match_repo.create_match(match_name, max_players, host)
+    match = match_repo.create_match(match_name, max_players, host, password)
 
     mock_db.add.assert_called_once()
     mock_db.commit.assert_called_once()

@@ -48,7 +48,7 @@ def test_get_player(mock_session, player_repo):
     assert player.player_id == 1
 
 def test_assign_match_to_player(mock_session, player_repo):
-    match = MatchModel(match_id=1, player_count=3, players=[PlayerModel(player_id=1),
+    match = MatchModel(match_id=1, player_count=3, password="", players=[PlayerModel(player_id=1),
                                                 PlayerModel(player_id=2), 
                                                 PlayerModel(player_id=3)])
     with patch.object(MatchRepository, 'get_match', return_value=match):
@@ -57,9 +57,9 @@ def test_assign_match_to_player(mock_session, player_repo):
         mock_db.commit = MagicMock()
         mock_db.close = MagicMock()
 
-        result = player_repo.assign_match_to_player(1, 1, log=False)
+        result = player_repo.assign_match_to_player(4, 1, log=False)
 
-        mock_db.get.assert_any_call(PlayerModel, 1)
+        mock_db.get.assert_any_call(PlayerModel, 4)
         mock_db.commit.assert_called_once()
         assert result is None
 
@@ -86,7 +86,7 @@ def test_assign_match_to_player_player_not_found(mock_session, player_repo):
     assert exc_info.value.detail == "Player not found."
 
 def test_assign_match_to_player_integrity_error(mock_session, player_repo):
-    match = MatchModel(match_id=1, player_count=4, players=[PlayerModel(player_id=1),
+    match = MatchModel(match_id=1, player_count=4, password="",players=[PlayerModel(player_id=1),
                                                 PlayerModel(player_id=2), 
                                                 PlayerModel(player_id=3), 
                                                 PlayerModel(player_id=4)])
@@ -101,6 +101,40 @@ def test_assign_match_to_player_integrity_error(mock_session, player_repo):
     mock_db.get.assert_any_call(PlayerModel, 1)
     assert exc_info.value.detail == "Match is full."
 
+def test_assign_match_to_player_password(mock_session, player_repo):
+    match = MatchModel(match_id=1, player_count=3, password="contraseña123", players=[PlayerModel(player_id=1),
+                                                PlayerModel(player_id=2)])
+    with patch.object(MatchRepository, 'get_match', return_value=match):
+        mock_db = mock_session.return_value
+        mock_db.get.side_effect = [PlayerModel(player_id=3), match]
+        mock_db.commit = MagicMock()
+        mock_db.close = MagicMock()
+
+        result = player_repo.assign_match_to_player(3, 1, "contraseña123", log=False)
+
+        mock_db.get.assert_any_call(PlayerModel, 3)
+        mock_db.commit.assert_called_once()
+        assert result is None
+
+
+        
+
+def test_assign_match_to_player_bad_password(mock_session, player_repo):
+    match = MatchModel(match_id=1, player_count=3, password="contraseña123", players=[PlayerModel(player_id=1),
+                                                PlayerModel(player_id=2)])
+    with patch.object(MatchRepository, 'get_match', return_value=match):
+        mock_db = mock_session.return_value
+        mock_db.get.side_effect = [PlayerModel(player_id=3), match]
+        mock_db.commit = MagicMock()
+        mock_db.close = MagicMock()
+
+        with pytest.raises(HTTPException) as exc_info:
+            player_repo.assign_match_to_player(3, 1, "", log=False)
+            assert exc_info.value.detail == "Incorrect password."
+
+        mock_db.get.assert_any_call(PlayerModel, 3)
+    
+        
 def test_unassign_match_to_player(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_db.get.side_effect = [
