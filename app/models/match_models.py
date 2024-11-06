@@ -15,6 +15,7 @@ class Match(Base):
     has_begun = Column(Boolean, default=False)
     turns = Column(Text, nullable=True, default="[]")
     board = Column(Text, nullable=True)
+    current_turn_ends_at = Column(Text, nullable=True)
     players = relationship("Player", back_populates="matches")
     move_cards = relationship("MoveCard", back_populates="matches")
     

@@ -12,6 +12,7 @@ from app.shape_detection.DFS import ShapeDetector
 import random
 import json
 import asyncio
+from datetime import datetime, timedelta
 
 class MatchRepository:
     def __init__(self):
@@ -156,9 +157,9 @@ class MatchRepository:
 
             db.commit()
 
-            self.timer_events[match.match_id] = asyncio.Event()
-            self.timer_tasks[match.match_id] = asyncio.create_task(self.timer(match_id))
-            print(f"\n\n START self.timer_events = {self.timer_events}\n\n")
+            # timer
+            self.__start_timer(match_id)
+            
             return {
                 "turns": shuffled_turns,
                 "board": board,
@@ -399,14 +400,40 @@ class MatchRepository:
         finally:
             db.close()
     
+    def __start_timer(self, match_id):
+        self.timer_events[match_id] = asyncio.Event()
+        self.timer_tasks[match_id] = asyncio.create_task(self.timer(match_id))
+
     async def timer(self, match_id):
         while True:
+            if match_id not in self.timer_events or self.timer_events[match_id] is None:
+                break # Si la partida deja de existir...
+
             self.timer_events[match_id].clear()
             try:
-                await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120) 
+                db = session()
+                match = db.get(MatchModel, match_id) # Se usa cuando ya existe un match...
+                if match:
+                    turn_time = (datetime.now() + timedelta(seconds=5)).strftime("%H:%M:%S")
+                    print(f"PLAYER {match.current_turn} HAS UNTIL {turn_time} TO MAKE A MOVE.")
+                    
+                    match.current_turn_ends_at = json.dumps(turn_time)
+                    db.commit()
+                    #message = {"action": "turn-timer", "data": {"time": match.current_turn_ends_at, "player_id": match.current_turn}}
+                    #print(f"TIMER MESSAGE: {message}")
+                    #await player_manager.broadcast_to_id_list(json.dumps(message), match.turns)
+
+                try:
+                    await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=5)
+                except asyncio.CancelledError:
+                    break # Si la partida deja de existir...
             except asyncio.TimeoutError:
                 # log de chat aqui
                 self.pass_turn(match_id)
+            finally:
+                db.close()
+
+    
         
       
     
