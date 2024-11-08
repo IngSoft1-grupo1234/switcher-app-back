@@ -104,6 +104,8 @@ def test_delete_player_not_found(mock_session):
 
 def test_use_shape_card():
     with patch.object(PlayerRepository, 'use_shape_card', return_value=([], {})),\
+         patch.object(PlayerRepository, 'get_player', return_value=MagicMock(player_id=1)),\
+         patch.object(MatchRepository, 'get_match'  , return_value=MagicMock(match_id=1)),\
          patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"))),\
          patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
         response = client.put("/players/use_shape_card/1", json={"color":"r", "location":"(1,1)"})

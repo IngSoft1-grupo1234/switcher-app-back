@@ -15,4 +15,3 @@ class Player(Base):
     move_cards = relationship("MoveCard", back_populates="players")
     shape_cards = relationship("ShapeCard", back_populates="players")
     used_cards = Column(Text, nullable=True, default="[]") # ids de cartas usadas. sirve :)
-    has_used_shape_card = Column(Boolean, nullable=False, default=False)

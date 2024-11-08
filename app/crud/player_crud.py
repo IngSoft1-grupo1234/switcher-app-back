@@ -1,10 +1,12 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from app.models.movecard_models import MoveCard as MoveCardModel
+
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
 from app.database import session
+import random
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 import json
@@ -102,7 +104,7 @@ class PlayerRepository:
                 player.match_id = None
                 player.move_cards = []
                 player.shape_cards = []
-                player.has_used_shape_card = False
+                
                 # clean up match's attributes
                 match.player_count -= 1
                 # check if player is the winner
@@ -206,9 +208,19 @@ class PlayerRepository:
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
-            player.has_used_shape_card = True
-
             
+
+
+            from app.crud.movecard_crud import MoveCardRepository
+            move_card_repo = MoveCardRepository()
+            move_card_repo.confirm_moves(match.current_turn)
+            amount = move_card_repo.get_amount_of_move_cards_by_player(player.player_id)
+            for _ in range(3 - amount):
+                inactive_moves = move_card_repo.get_move_cards_id_inactive_in_match(match_id)
+                if not inactive_moves:
+                    raise HTTPException(status_code=400, detail="Match has no more move cards.")
+                move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player.player_id)
+
 
             db.commit()
 

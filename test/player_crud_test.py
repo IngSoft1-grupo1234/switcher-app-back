@@ -19,6 +19,11 @@ def mock_session():
     with patch('app.crud.player_crud.session') as mock_session:
         yield mock_session
 
+@pytest.fixture
+def move_mock_session():
+    with patch('app.crud.movecard_crud.session') as move_mock_session:
+        yield move_mock_session
+
 def test_create_player(mock_session, player_repo):
     mock_db = mock_session.return_value
     mock_db.add = MagicMock()
@@ -145,6 +150,17 @@ board = json.dumps([
     ["g", "b", "y", "r", "g", "b"]
 ])
 
+pass_turn_return_board = [
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"],
+    ["r", "r", "r", "r", "r", "r"]
+]
+
+pass_turn_return_shapes = {}
+
 def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
     match = MatchModel(match_id=1, turns=json.dumps([1, 2, 3]), current_turn=1, board=board, prohibited_color="", prohibited_shapes="[]", no_longer_prohibited_shapes="[]")
@@ -158,7 +174,9 @@ def test_use_shape_card(mock_session, player_repo):
     mock_db.close = MagicMock()
 
     with patch('app.crud.shapecard_crud.ShapeCardRepository.get_shape_card') as mock_shape_card,\
-            patch('app.crud.shapecard_crud.ShapeCardRepository.set_active_shape_card') as mock_set_active_shape_card:
+         patch('app.crud.shapecard_crud.ShapeCardRepository.set_active_shape_card'),\
+         patch('app.crud.movecard_crud.MoveCardRepository.get_amount_of_move_cards_by_player', return_value=3),\
+         patch('app.crud.movecard_crud.MoveCardRepository.confirm_moves', return_value=(pass_turn_return_board, pass_turn_return_shapes)): 
             mock_shape_card.return_value = MagicMock()
             player_repo.use_shape_card(1, "r", "(1,0)")
 
