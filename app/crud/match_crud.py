@@ -447,7 +447,7 @@ class MatchRepository:
             self.timer_events[match_id].clear()
             try:
                 try:
-                    await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=5)
+                    await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=120)
                 except asyncio.CancelledError:
                     break # Si la partida deja de existir...
             except asyncio.TimeoutError:
