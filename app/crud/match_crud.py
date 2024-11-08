@@ -7,6 +7,7 @@ from app.crud.movecard_crud import MoveCardRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty
+from app.websocket.websocket_endpoints import player_manager
 from app.models.chat_models import messageType
 import asyncio
 from app.crud.player_crud import PlayerRepository 
@@ -14,6 +15,8 @@ from app.database import session
 from app.shape_detection.DFS import ShapeDetector
 import random
 import json
+import asyncio
+from datetime import datetime, timedelta
 
 class MatchRepository:
     def __init__(self):
@@ -167,6 +170,9 @@ class MatchRepository:
                                                                   match_id=match.match_id, 
                                                                   ids=player_ids))
             
+            # timer
+            self.__start_timer(match_id)
+            
             return {
                 "turns": shuffled_turns,
                 "board": board,
@@ -253,7 +259,7 @@ class MatchRepository:
 
 
 
-    def pass_turn(self, match_id, log = True):
+    def pass_turn(self, match_id, log = True, timercheck = True):
         db = session()
         move_card_repo = MoveCardRepository()
         try:
@@ -308,6 +314,11 @@ class MatchRepository:
             match.current_turn = next_turn
             
             db.commit()
+
+            if timercheck:
+                if match_id not in self.timer_events or self.timer_events[match_id] is None:
+                    if match_id not in self.timer_tasks or self.timer_tasks[match_id] is None:
+                        self.__start_timer(match_id)
 
             if log:
                 player_ids = [player.player_id for player in match.players]
@@ -412,7 +423,57 @@ class MatchRepository:
         finally:
             db.close()
     
+    def __start_timer(self, match_id):
+        print("""         .--.
+    .-._;.--.;_.-.
+   (_.'_..--.._'._)
+    /.' . 120 . '.\\
+   // .      / . \\\\
+  |; .      /   . |;
+  ||90    ()    30||
+  |; .          . |;
+   \\\\ .        . //
+    \\'._' 60 '_.'/
+     '-._'--'_.-'
+         `""`  """)
+        self.timer_events[match_id] = asyncio.Event()
+        self.timer_tasks[match_id] = asyncio.create_task(self.timer(match_id))
 
+    async def timer(self, match_id, log=True):
+        while True:
+            if match_id not in self.timer_events or self.timer_events[match_id] is None:
+                break # Si la partida deja de existir...
+
+            self.timer_events[match_id].clear()
+            try:
+                try:
+                    await asyncio.wait_for(self.timer_events[match_id].wait(), timeout=5)
+                except asyncio.CancelledError:
+                    break # Si la partida deja de existir...
+            except asyncio.TimeoutError:
+                # log de chat aqui
+                if log:
+                    asyncio.create_task(PlayerRepository.broadcast_message_to_id_list(
+                        content="A MF was sleeping on the keyboard! The turn has been passed.",
+                        message_type=messageType.PlayerPassTurn,
+                        match_id=match_id, 
+                        ids=self.get_player_ids_in_match(match_id)))
+                    
+                    
+                try:
+                    next_player_json = self.get_next_player(match_id=match_id) # error cuando solo queda un jugador y abandona?
+                except HTTPException:
+                    next_player_json = {"username": "ni en pedo me fijo en el username", "player_id": 999}
+                
+                if next_player_json:
+                    message = {"action": "next-turn",
+                                "data": {"next_player_name":next_player_json["username"],
+                                        "next_player_id": next_player_json["player_id"]}
+                            }
+                    await player_manager.broadcast_to_id_list(json.dumps(message), self.get_player_ids_in_match(match_id))
+                self.pass_turn(match_id)
+
+    
         
       
     

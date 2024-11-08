@@ -148,7 +148,7 @@ def test_pass_turn(match_repo, mock_session, player_mock_session):
             player_mock_db = player_mock_session.return_value
         player_mock_db.get.return_value = PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]))
         with patch('app.crud.movecard_crud.MoveCardRepository.confirm_moves', return_value=(pass_turn_return_board, pass_turn_return_shapes)):
-            result = match_repo.pass_turn(1, log=False)
+            result = match_repo.pass_turn(1, log=False, timercheck=False)
 
     assert result == (pass_turn_return_board, pass_turn_return_shapes)
     assert mock_match.current_turn == 2

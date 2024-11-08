@@ -47,13 +47,17 @@ async def unassign_match_to_player(player_id: int):
     
     if repo_player.is_player_turn(player_id):
         if repo_player.is_player_turn(player_id) != "bazinga":
+            try:
+                next_player_json = repo_match.get_next_player(match_id=player.match_id) # error cuando solo queda un jugador y abandona?
+            except HTTPException:
+                next_player_json = {"username": player.username, "player_id": player_id}
             repo_match.pass_turn(player.match_id)
-            next_player_json = repo_match.get_next_player(match_id=player.match_id)
             if next_player_json:
                 message = {"action": "next-turn",
                             "data": {"next_player_name":next_player_json["username"],
                                       "next_player_id": next_player_json["player_id"]}
                           }
+                await player_manager.broadcast(json.dumps(message)) # esto no estaba antes T-T, nadie se queja loco
 
     winner_json = repo_player.unassign_match_to_player(player_id=player_id)
     if winner_json:
