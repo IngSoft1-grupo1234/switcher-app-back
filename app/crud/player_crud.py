@@ -219,7 +219,7 @@ class PlayerRepository:
 
             db.commit()
 
-            return match.board, shapes
+            return match.board, shapes, match.prohibited_color
         finally:
             db.close()
     

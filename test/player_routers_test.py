@@ -7,6 +7,7 @@ from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.player_models import Player as PlayerModel
+from app.models.match_models import Match as MatchModel
 
 
 client = TestClient(router)
@@ -103,7 +104,7 @@ def test_delete_player_not_found(mock_session):
             assert exc_info.value.detail == "Player not found."
 
 def test_use_shape_card():
-    with patch.object(PlayerRepository, 'use_shape_card', return_value=([], {})),\
+    with patch.object(PlayerRepository, 'use_shape_card', return_value=([], {}, "")),\
          patch.object(PlayerRepository, 'get_player', return_value=MagicMock(player_id=1)),\
          patch.object(MatchRepository, 'get_match'  , return_value=MagicMock(match_id=1)),\
          patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"))),\

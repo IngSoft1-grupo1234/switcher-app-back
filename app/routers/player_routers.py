@@ -73,13 +73,15 @@ async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
 
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
-    board, shapes = repo_player.use_shape_card(shape_card_id=shape_card_id, color=usedshape.color, location=usedshape.location)
+    board, shapes, prohibited_color = repo_player.use_shape_card(shape_card_id=shape_card_id, color=usedshape.color, location=usedshape.location)
     player_id = shape_card.player_id
 
     player = repo_player.get_player(player_id=player_id)
     match = match_repo.get_match(player.match_id)
 
-    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id, "shape_card_type": shape_card.shape_card_type.value}}
+    message = {"action": "shape-card-used","data": {"shape_card_id": shape_card.shape_card_id,
+                                                    "shape_card_type": shape_card.shape_card_type.value,
+                                                    "prohibited_color": prohibited_color,}}
     print(f"SHAPE CARD USED MESSAGE: {message}")
     await player_manager.broadcast_to_id_list(json.dumps(message), match.turns)
     
