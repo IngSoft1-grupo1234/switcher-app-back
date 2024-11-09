@@ -291,8 +291,8 @@ class MatchRepository:
             if match.match_id in self.timer_events:
                 self.timer_events[match.match_id].set()
 
-            prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(match.prohibited_shapes)]
-            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
+            
             return board, shapes
         finally:
             db.close()

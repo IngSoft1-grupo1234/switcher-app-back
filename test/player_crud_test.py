@@ -163,7 +163,7 @@ pass_turn_return_shapes = {}
 
 def test_use_shape_card(mock_session, player_repo):
     mock_db = mock_session.return_value
-    match = MatchModel(match_id=1, turns=json.dumps([1, 2, 3]), current_turn=1, board=board, prohibited_color="", prohibited_shapes="[]", no_longer_prohibited_shapes="[]")
+    match = MatchModel(match_id=1, turns=json.dumps([1, 2, 3]), current_turn=1, board=board, prohibited_color="")
     mock_db.get.side_effect = [
         ShapeCardModel(shape_card_id=1, player_id=1, is_active=True),  # Para ShapeCardModel
         PlayerModel(player_id=1, match_id=1, matches=match),  # Para PlayerModel

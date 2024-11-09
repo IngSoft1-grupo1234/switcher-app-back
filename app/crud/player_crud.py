@@ -190,20 +190,15 @@ class PlayerRepository:
             if player.player_id != match.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
             
-            prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(match.prohibited_shapes)]
-            no_longer_prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(match.no_longer_prohibited_shapes)]
-
-            prohibited_shapes = [shape for shape in prohibited_shapes if shape not in no_longer_prohibited_shapes]
+            
 
 
-            if any(location in shape for shape in prohibited_shapes) and color == match.prohibited_color: # si location esta dentro de alguna figura prohibida
-                raise HTTPException(status_code=400, detail="Shape is prohibited.")
+            if  color == match.prohibited_color: # si location esta dentro de alguna figura prohibida
+                raise HTTPException(status_code=400, detail="Color is prohibited.")
 
             shapes = ShapeDetector().test_shape_fitting(json.loads(match.board))
             match.prohibited_color = color
-            used_color_shapes = [shape['positions'] for shape in shapes.values() if shape['color'] == match.prohibited_color]
-            match.prohibited_shapes = json.dumps(used_color_shapes)
-            match.no_longer_prohibited_shapes = "[]"
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != color}
             
             shape_card.is_active = False
             shape_card.player_id = None

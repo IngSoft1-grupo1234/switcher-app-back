@@ -168,21 +168,15 @@ class MoveCardRepository:
             
             # crear lista de cartas usadas (wtf este comentario? lo puse yo encima)
             board = json.loads(match.board)
-            prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(match.prohibited_shapes)]
-
-            no_longer_prohibited_shapes = []
 
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
-                board, affected_tuples = self.__apply_move_card(
+                board = self.__apply_move_card(
                     used_card.move_card_type.value, 
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
-
-                no_longer_prohibited_shapes = [shape for shape in prohibited_shapes if any(tuples in shape for tuples in affected_tuples)]
                 
-            match.no_longer_prohibited_shapes = json.dumps(no_longer_prohibited_shapes)
 
 
 
@@ -202,13 +196,7 @@ class MoveCardRepository:
             print("="*30 + "\n")
 
             shapes = ShapeDetector().test_shape_fitting(board)
-            print(f"\n\nraw shapes: {shapes}\n\n")
-            prohibited_shapes = [shape for shape in prohibited_shapes if shape not in no_longer_prohibited_shapes]
-            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
-            print(f"\n no longer prohibited shapes: {no_longer_prohibited_shapes}\n")
-            print(f"\n prohibited shapes: {prohibited_shapes}\n")
-
-            print(f"\n\nshapes post elimination: {shapes}\n\n")
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             return board, shapes
@@ -235,34 +223,31 @@ class MoveCardRepository:
                 raise HTTPException(status_code=404, detail="Something not found")
             
             board = json.loads(match.board)
-            prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(match.prohibited_shapes)]
 
             used_cards = json.loads(player.used_cards)
             if not used_cards or used_cards == []:
                 shapes = ShapeDetector().test_shape_fitting(board)
-                shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
+                shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
                 return board, shapes # regreso board sin tocar, y lista vacia 
             
             # MODULARIZAR ESTO POR DIOS
             
             self.pretty_print_board(board)
-            no_longer_prohibited_shapes = []
+            
             
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
-                board, affected_tuples = self.__apply_move_card(
+                board = self.__apply_move_card(
                     used_card.move_card_type.value, 
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
 
-                no_longer_prohibited_shapes = [shape for shape in prohibited_shapes if any(tuples in shape for tuples in affected_tuples)]
-
                 print(f"\n\n Iteracion {i}:\n")
                 print(f"The card type is {used_card.move_card_type.value}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
                 self.pretty_print_board(board)
 
-            match.no_longer_prohibited_shapes = json.dumps(no_longer_prohibited_shapes)
+            
 
             # ELIMINAR CARTAS USADAS
             for card_id in used_cards:
@@ -277,8 +262,7 @@ class MoveCardRepository:
             db.commit()
 
             shapes = ShapeDetector().test_shape_fitting(board)
-            prohibited_shapes = [shape for shape in prohibited_shapes if shape not in no_longer_prohibited_shapes]
-            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             return board, shapes
@@ -305,19 +289,15 @@ class MoveCardRepository:
             db.commit()
 
             board = json.loads(player.matches.board)
-            prohibited_shapes = [list(map(tuple, shape)) for shape in json.loads(player.matches.prohibited_shapes)]
-            no_longer_prohibited_shapes = []
+            
 
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
-                board, affected_tuples = self.__apply_move_card(
+                board = self.__apply_move_card(
                     used_card.move_card_type.value, 
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
-
-                no_longer_prohibited_shapes = [shape for shape in prohibited_shapes if any(tuples in shape for tuples in affected_tuples)]
-            player.matches.no_longer_prohibited_shapes = json.dumps(no_longer_prohibited_shapes)
 
             print(f"The last move (card {last_used_card.move_card_id}) was canceled")
             for cards in player.move_cards:
@@ -328,8 +308,7 @@ class MoveCardRepository:
 
             
             shapes = ShapeDetector().test_shape_fitting(board)
-            prohibited_shapes = [shape for shape in prohibited_shapes if shape not in no_longer_prohibited_shapes]
-            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != player.matches.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             return board, shapes
@@ -348,7 +327,7 @@ class MoveCardRepository:
             board[x][y], board[new_x][new_y] = board[new_x][new_y], board[x][y]
         else:
             raise HTTPException(status_code=400, detail="Invalid move")
-        return board, [(x, y), (new_x, new_y)]
+        return board
 
     def __get_card_movement(self, move_type: int, orientation: str) -> list[int]:
         # devuelve los numeros a sumar a las cordenadas del board
