@@ -239,7 +239,9 @@ class MoveCardRepository:
 
             used_cards = json.loads(player.used_cards)
             if not used_cards or used_cards == []:
-                return board, ShapeDetector().test_shape_fitting(board) # regreso board sin tocar, y lista vacia 
+                shapes = ShapeDetector().test_shape_fitting(board)
+                shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['positions'] not in prohibited_shapes}
+                return board, shapes # regreso board sin tocar, y lista vacia 
             
             # MODULARIZAR ESTO POR DIOS
             
