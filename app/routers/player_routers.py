@@ -89,14 +89,14 @@ async def use_shape_card(shape_card_id: int):
         print(f"WINNER MESSAGE: {winner_message}")
         await player_manager.broadcast(json.dumps(winner_message))
     
-@router.put("/players/{player_id}/block_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def block_shape_card(shape_card_id: int, player_id: int):
+@router.put("/players/block_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def block_shape_card(shape_card_id: int):
     repo_player = PlayerRepository()
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
-    player_turn = repo_player.get_player(player_id=player_id)
     player_block = repo_player.get_player(player_id=shape_card.player_id)
-    repo_player.block_shape_card(shape_card_id=shape_card_id, player_id=player_id)
+    player_id = repo_player.block_shape_card(shape_card_id=shape_card_id)
+    player_turn = repo_player.get_player(player_id=player_id)
 
     message = {"action": "shape-card-block","data": {   "shape_card_id": shape_card.shape_card_id, 
                                                         "shape_card_type": shape_card.shape_card_type.value, 
