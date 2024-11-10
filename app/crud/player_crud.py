@@ -196,6 +196,8 @@ class PlayerRepository:
                 raise HTTPException(status_code=404, detail="Shape card not found.")
             if not shape_card.is_active:
                 raise HTTPException(status_code=400, detail="Shape card is not active.")
+            if shape_card.is_blocked:
+                raise HTTPException(status_code=400, detail="Shape card is blocked.")
             player = db.get(PlayerModel, shape_card.player_id)
             if not player:
                 raise HTTPException(status_code=404, detail="Player not found.")
@@ -206,14 +208,29 @@ class PlayerRepository:
             match = db.get(MatchModel, match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            turns = json.loads(match.turns)
-            if player.player_id != player.matches.current_turn:
+            if player.player_id != match.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
 
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
             player.has_used_shape_card = True
+
+
+            # Unblock shape card if it is possible
+            amount_active_shape_cards = 0
+            has_block_card = False
+
+            for card in player.shape_cards:
+                if card.is_active:
+                    amount_active_shape_cards += 1
+                if card.is_blocked:
+                    has_block_card = True
+                    block_card = card
+
+            if amount_active_shape_cards == 1 and has_block_card:
+                block_card.is_blocked = False
+
             db.commit()
 
              # CHAT MESSAGE
@@ -293,6 +310,53 @@ class PlayerRepository:
             if len(turns) == 0:
                 return "bazinga"
             return player.player_id == turns[0]
+        finally:
+            db.close()
+        
+    def block_shape_card(self, shape_card_id):
+        try:
+            db = session()
+            shape_card = db.get(ShapeCardModel, shape_card_id)
+            if not shape_card:
+                raise HTTPException(status_code=404, detail="Shape card not found.")
+            if not shape_card.is_active:
+                raise HTTPException(status_code=400, detail="Shape card is not active.")
+            player_block = db.get(PlayerModel, shape_card.player_id)
+            if not player_block:
+                raise HTTPException(status_code=404, detail="Player not found.")
+            
+            match_id = player_block.match_id
+            match = db.get(MatchModel, match_id)
+            if not match:
+                raise HTTPException(status_code=404, detail="Match not found.")
+
+            
+            amount_shape_cards = 0
+            for cards in player_block.shape_cards:
+                if cards.is_active:
+                    amount_shape_cards += 1
+            
+            if amount_shape_cards != 3:
+                raise HTTPException(status_code=400, detail="Player does not have 3 active shape cards.")
+            
+            has_block_card = False
+            for cards in player_block.shape_cards:
+                if cards.is_blocked:
+                    has_block_card = True
+                    break
+            if has_block_card:
+                raise HTTPException(status_code=400, detail="Player already has a blocked shape card.")                
+
+            shape_card.is_blocked = True
+
+            player_turn = db.get(PlayerModel, match.current_turn)
+            if not player_turn:
+                raise HTTPException(status_code=404, detail="Player not found.")
+
+            player_turn.has_used_shape_card = True
+            db.commit()
+
+            return player_turn.player_id
         finally:
             db.close()
 
