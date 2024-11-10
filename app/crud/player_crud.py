@@ -229,7 +229,13 @@ class PlayerRepository:
                     block_card = card
 
             if amount_active_shape_cards == 1 and has_block_card:
-                block_card.is_blocked = False
+                    block_card.is_blocked = False
+                    message = {"action": "shape-card-unblock","data": {     "unblocked_shape_card_id": block_card.shape_card_id, 
+                                                                            "unblocked_shape_card_type": block_card.shape_card_type.value, 
+                                                                            "player_id": player.player_id, 
+                                                                        }}
+                    print(f"SHAPE CARD UNBLOCKED MESSAGE: {message}")
+                    await player_manager.broadcast(json.dumps(message))
 
             db.commit()
 
