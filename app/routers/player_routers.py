@@ -110,18 +110,21 @@ async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
         print(f"WINNER MESSAGE: {winner_message}")
         await player_manager.broadcast(json.dumps(winner_message))
 
+
 @router.put("/players/{player_id}/send_message", status_code=status.HTTP_204_NO_CONTENT)
 async def send_message(player_id: int, message_info: ChatIn):
     repo = PlayerRepository()
     repo.player_send_message(player_id=player_id, content=message_info.content)
     # player_cruds hace el broadcast_to_id_list    
+
+
 @router.put("/players/block_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def block_shape_card(shape_card_id: int):
+async def block_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
     repo_player = PlayerRepository()
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
     player_block = repo_player.get_player(player_id=shape_card.player_id)
-    player_id = repo_player.block_shape_card(shape_card_id=shape_card_id)
+    player_id = repo_player.block_shape_card(shape_card_id=shape_card_id, color=usedshape.color)
     player_turn = repo_player.get_player(player_id=player_id)
 
     message = {"action": "shape-card-block","data": {   "shape_card_id": shape_card.shape_card_id, 

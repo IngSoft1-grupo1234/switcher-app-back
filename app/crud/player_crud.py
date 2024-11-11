@@ -227,7 +227,7 @@ class PlayerRepository:
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
-            player.has_used_shape_card = True
+            
 
 
             # Unblock shape card if it is possible
@@ -346,7 +346,7 @@ class PlayerRepository:
         finally:
             db.close()
         
-    def block_shape_card(self, shape_card_id):
+    def block_shape_card(self, shape_card_id, color):
         try:
             db = session()
             shape_card = db.get(ShapeCardModel, shape_card_id)
@@ -386,7 +386,8 @@ class PlayerRepository:
             if not player_turn:
                 raise HTTPException(status_code=404, detail="Player not found.")
 
-            player_turn.has_used_shape_card = True
+            match.prohibited_color = color
+            
             db.commit()
 
             return player_turn.player_id
