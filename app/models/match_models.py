@@ -16,6 +16,7 @@ class Match(Base):
     has_begun = Column(Boolean, default=False)
     turns = Column(Text, nullable=True, default="[]")
     board = Column(Text, nullable=True)
+    prohibited_color = Column(Text, default="")
     players = relationship("Player", back_populates="matches")
     move_cards = relationship("MoveCard", back_populates="matches")
     chats = relationship("Chat", cascade="all, delete-orphan")

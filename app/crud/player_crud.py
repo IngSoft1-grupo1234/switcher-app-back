@@ -1,6 +1,7 @@
 from app.models.player_models import Player as PlayerModel
 from app.models.match_models import Match as MatchModel
 from app.models.movecard_models import MoveCard as MoveCardModel
+
 from app.models.movecard_models import MoveCardType
 from app.models.shapecard_models import ShapeCard as ShapeCardModel
 from app.models.shapecard_models import ShapeCardType, ShapeCardDifficulty # redundante 
@@ -8,11 +9,13 @@ from app.models.chat_models import Chat as ChatModel
 from app.models.chat_models import messageType
 from app.websocket.websocket_endpoints import player_manager
 from app.database import session
+import random
 import asyncio
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from datetime import datetime
 import json
+from app.shape_detection.DFS import ShapeDetector
 
 class PlayerRepository:
     def create_player(self, username) -> PlayerModel:
@@ -119,7 +122,7 @@ class PlayerRepository:
                 player.match_id = None
                 player.move_cards = []
                 player.shape_cards = []
-                player.has_used_shape_card = False
+                
                 # clean up match's attributes
                 match.player_count -= 1
                 # check if player is the winner
@@ -188,7 +191,7 @@ class PlayerRepository:
         finally:
             db.close()
     
-    def use_shape_card(self, shape_card_id, log = True):
+    def use_shape_card(self, shape_card_id, color, location, log = True):
         try:
             db = session()
             shape_card = db.get(ShapeCardModel, shape_card_id)
@@ -206,23 +209,49 @@ class PlayerRepository:
             match = db.get(MatchModel, match_id)
             if not match:
                 raise HTTPException(status_code=404, detail="Match not found.")
-            turns = json.loads(match.turns)
-            if player.player_id != player.matches.current_turn:
+            
+            if player.player_id != match.current_turn:
                 raise HTTPException(status_code=400, detail="It is not your turn.")
+            
+            
 
+
+            if  color == match.prohibited_color: # si location esta dentro de alguna figura prohibida
+                raise HTTPException(status_code=400, detail="Color is prohibited.")
+
+            shapes = ShapeDetector().test_shape_fitting(json.loads(match.board))
+            match.prohibited_color = color
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != color}
+            
             shape_card.is_active = False
             shape_card.player_id = None
             db.delete(shape_card)
-            player.has_used_shape_card = True
-            db.commit()
+            
 
-             # CHAT MESSAGE
+
+            from app.crud.movecard_crud import MoveCardRepository
+            move_card_repo = MoveCardRepository()
+            move_card_repo.confirm_moves(match.current_turn)
+            amount = move_card_repo.get_amount_of_move_cards_by_player(player.player_id)
+            for _ in range(3 - amount):
+                inactive_moves = move_card_repo.get_move_cards_id_inactive_in_match(match_id)
+                if not inactive_moves:
+                    raise HTTPException(status_code=400, detail="Match has no more move cards.")
+                move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player.player_id)
+
+
+            db.commit()
+            # CHAT MESSAGE
             if log:
                 player_ids = [player.player_id for player in match.players]
                 asyncio.create_task(self.broadcast_message_to_id_list(content=f"{player.username} has used a shape card.",
                                                                     message_type=messageType.PlayerUsesShapeCard, 
                                                                     match_id=player.match_id, 
                                                                     ids=player_ids))
+                
+            return match.board, shapes, match.prohibited_color
+
+            
         finally:
             db.close()
     

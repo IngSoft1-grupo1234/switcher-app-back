@@ -156,8 +156,8 @@ class MoveCardRepository:
                 raise HTTPException(status_code=400, detail="Invalid movement info, missing fields")
             if movement_info.position[0] != "[" or movement_info.position[-1] != "]":
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
-            print(f"HEAAAAAAAAAAAAAAAAAA {json.loads(movement_info.position)}")
-            if len(json.loads(movement_info.position)) != 2:
+            
+            if len(json.loads(movement_info.position)) != 2: # esta en esta linea intencionalmente. ):C
                 raise HTTPException(status_code=400, detail="Invalid position format, the correct format is a string like this: '[x, y]'")
             
             # Valida movimiento
@@ -169,8 +169,9 @@ class MoveCardRepository:
             card.last_used_position = movement_info.position
             db.commit()
             
-            # crear lista de cartas usadas
+            # crear lista de cartas usadas (wtf este comentario? lo puse yo encima)
             board = json.loads(match.board)
+
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
                 board = self.__apply_move_card(
@@ -178,6 +179,8 @@ class MoveCardRepository:
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
+                
+
 
 
             # printing   
@@ -188,9 +191,15 @@ class MoveCardRepository:
                     print(f"{cards.move_card_id} - {move_card_type_str}")
             self.pretty_print_board(board)
         
-
+    
             db.commit() # si el movimiento no es valido salta excepcion en apply_move_card
+
+            print("\n" + "="*30)
+            print("USING MOVE CARD HERE")
+            print("="*30 + "\n")
+
             shapes = ShapeDetector().test_shape_fitting(board)
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             # MESSAGE
@@ -230,11 +239,14 @@ class MoveCardRepository:
 
             used_cards = json.loads(player.used_cards)
             if not used_cards or used_cards == []:
-                return board, ShapeDetector().test_shape_fitting(board) # regreso board sin tocar, y lista vacia 
+                shapes = ShapeDetector().test_shape_fitting(board)
+                shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
+                return board, shapes # regreso board sin tocar, y lista vacia 
             
             # MODULARIZAR ESTO POR DIOS
             
             self.pretty_print_board(board)
+            
             
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
@@ -243,9 +255,12 @@ class MoveCardRepository:
                     board, used_card.last_used_orientation, 
                     json.loads(used_card.last_used_position)
                 )
+
                 print(f"\n\n Iteracion {i}:\n")
                 print(f"The card type is {used_card.move_card_type.value}, the orientation is {used_card.last_used_orientation} and the position is {json.loads(used_card.last_used_position)}\n")
                 self.pretty_print_board(board)
+
+            
 
             # ELIMINAR CARTAS USADAS
             for card_id in used_cards:
@@ -260,6 +275,7 @@ class MoveCardRepository:
             db.commit()
 
             shapes = ShapeDetector().test_shape_fitting(board)
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != match.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             return board, shapes
@@ -286,6 +302,8 @@ class MoveCardRepository:
             db.commit()
 
             board = json.loads(player.matches.board)
+            
+
             for i in range(len(used_cards)):
                 used_card = db.get(MoveCardModel,used_cards[i])
                 board = self.__apply_move_card(
@@ -300,7 +318,10 @@ class MoveCardRepository:
                     move_card_type_str = MoveCardRepository().imprimir_tipo_de_movimiento(cards.move_card_type.value).replace('\n', '')
                     print(f"{cards.move_card_id} - {move_card_type_str}")
             self.pretty_print_board(board)
+
+            
             shapes = ShapeDetector().test_shape_fitting(board)
+            shapes = {shape: shapes[shape] for shape in shapes if shapes[shape]['color'] != player.matches.prohibited_color}
             ShapeDetector().pretty_print_result(shapes)
 
             # MESSAGE
@@ -319,7 +340,7 @@ class MoveCardRepository:
             db.close()
         
     
-    def __apply_move_card(self, move_type: int, board: list[list[str]], orientation: str, position: list[int]) -> list[list[str]]:
+    def __apply_move_card(self, move_type: int, board: list[list[str]], orientation: str, position: list[int]):
         movement = self.__get_card_movement(move_type, orientation)
         x = position[0]
         y = position[1]
@@ -337,25 +358,25 @@ class MoveCardRepository:
             raise HTTPException(status_code=400, detail="Invalid orientation")
         
         movements = {
-            2: { # diagonal salto una casilla
+            2: { # Salto diagonal de una casilla
                 "up": [-2, 2],
                 "down": [2, -2],
                 "left": [-2, -2],
                 "right": [2, 2]
             },
-            4: { # recto salto una casilla
+            4: { # Salto recto de una casilla
                 "up": [-2, 0],
                 "down": [2, 0],
                 "left": [0, -2],
                 "right": [0, 2]
             },
-            3: { # recto sin salto
+            3: { # Recto sin saltar
                 "up": [-1, 0],
                 "down": [1, 0],
                 "left": [0, -1],
                 "right": [0, 1]
             },
-            1: { # diagonal sin salto
+            1: { # Diagonal sin saltar
                 "up": [-1, 1],
                 "down": [1, -1],
                 "left": [-1, -1],
@@ -373,7 +394,7 @@ class MoveCardRepository:
                 "left": [1, -2],
                 "right": [-1, 2]
             },
-            7: { # recto salto cuatro casillas
+            7: { # Salto recto de cuatro casillas
                 "up": [-4, 0],
                 "down": [4, 0],
                 "left": [0, -4],

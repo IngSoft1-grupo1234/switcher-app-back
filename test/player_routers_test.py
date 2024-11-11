@@ -7,6 +7,7 @@ from app.crud.player_crud import PlayerRepository
 from app.crud.match_crud import MatchRepository
 from app.crud.shapecard_crud import ShapeCardRepository
 from app.models.player_models import Player as PlayerModel
+from app.models.match_models import Match as MatchModel
 
 
 
@@ -105,10 +106,12 @@ def test_delete_player_not_found(mock_session):
 
 
 def test_use_shape_card():
-    with patch.object(PlayerRepository, 'use_shape_card', return_value=None),\
+    with patch.object(PlayerRepository, 'use_shape_card', return_value=([], {}, "")),\
+         patch.object(PlayerRepository, 'get_player', return_value=MagicMock(player_id=1)),\
+         patch.object(MatchRepository, 'get_match'  , return_value=MagicMock(match_id=1)),\
          patch.object(ShapeCardRepository, 'get_shape_card', return_value=MagicMock(shape_card_id=1, shape_card_type=MagicMock(value="type"), player_id=1)),\
          patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
-        response = client.put("/players/use_shape_card/1")
+        response = client.put("/players/use_shape_card/1", json={"color":"r", "location":"(1,1)"})
         assert response.status_code == 204
 
 # patch('app.websocket.connection_manager.ConnectionManager.broadcast_to_id_list', new_callable=AsyncMock),\
@@ -118,6 +121,6 @@ def test_use_shape_card_not_found():
          patch.object(ShapeCardRepository, 'get_shape_card', side_effect=HTTPException(status_code=404, detail="Shape card not found.")),\
          patch.object(PlayerRepository, 'winner_without_shape_card', return_value=None):
          with pytest.raises(HTTPException) as exc_info:
-            response = client.put("/players/use_shape_card/999")
+            response = client.put("/players/use_shape_card/999", json={"color":"r", "location":"(1,1)"})
             assert response.status_code == 404
             assert exc_info.value.detail == "Shape card not found."

@@ -133,7 +133,7 @@ def test_pass_turn(match_repo, mock_session, player_mock_session):
     mock_match = MatchModel(match_id=1, match_name="Match1", max_players=4, host="1", player_count=2, current_turn=1, has_begun=True, players=[
         PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([])),
         PlayerModel(player_id=2, username="Player2", match_id = 1, used_cards = json.dumps([]))
-    ],  turns=json.dumps([1, 2]), board = json.dumps(pass_turn_return_board))
+    ],  turns=json.dumps([1, 2]), board = json.dumps(pass_turn_return_board), prohibited_color="")
     mock_db.query.return_value.get.return_value = mock_match
     mock_db.get.return_value = mock_match
 
@@ -146,9 +146,9 @@ def test_pass_turn(match_repo, mock_session, player_mock_session):
             patch('app.crud.shapecard_crud.ShapeCardRepository.get_amount_of_shape_cards_by_player', return_value=3),\
             patch('app.crud.movecard_crud.MoveCardRepository.get_amount_of_move_cards_by_player', return_value=3):
             player_mock_db = player_mock_session.return_value
-        player_mock_db.get.return_value = PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]))
-        with patch('app.crud.movecard_crud.MoveCardRepository.confirm_moves', return_value=(pass_turn_return_board, pass_turn_return_shapes)):
-            result = match_repo.pass_turn(1, log=False, timercheck=False)
+            player_mock_db.get.return_value = PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]))
+            with patch('app.crud.movecard_crud.MoveCardRepository.confirm_moves', return_value=(pass_turn_return_board, pass_turn_return_shapes)): # borrar linea <<<
+                result = match_repo.pass_turn(1, log=False, timercheck=False)
 
     assert result == (pass_turn_return_board, pass_turn_return_shapes)
     assert mock_match.current_turn == 2

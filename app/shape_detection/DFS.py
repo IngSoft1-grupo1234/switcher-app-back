@@ -1,12 +1,13 @@
 from .algoritmo import ShapeFitChecker
 from .shapes import SHAPE_TYPES
-import random
+
 
 class ShapeDetector:
     def __init__(self):
         self.directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        self.iterations = 0
-        self.comparations = 0
+        sf = ShapeFitChecker()
+        if not hasattr(self.__class__, 'formas_disponibles'): # velocida' 
+            self.__class__.formas_disponibles = sf.formas_disponibles
 
     def dfs(self, board, visited, row, col, color):
         stack = [(row, col)]
@@ -26,7 +27,6 @@ class ShapeDetector:
                     if 0 <= new_r < len(board) and 0 <= new_c < len(board[0]):
                         if not visited[new_r][new_c] and board[new_r][new_c] == color:
                             stack.append((new_r, new_c))
-                            self.iterations += 1
         
         return group
 
@@ -48,13 +48,14 @@ class ShapeDetector:
 
     def test_shape_fitting(self, board):
         color_groups = self.find_color_groups(board)
+        print(f"Color groups: {color_groups}")
         color_name = { 'r': 'Red', 'g': 'Green', 'b': 'Blue', 'y': 'Yellow' }
 
         sf = ShapeFitChecker()
-        formas_disponibles = sf.formas_disponibles
+        formas_disponibles = self.formas_disponibles
 
         result = {}
-
+ 
         key = 1
 
         for i, (color, group) in enumerate(color_groups):
