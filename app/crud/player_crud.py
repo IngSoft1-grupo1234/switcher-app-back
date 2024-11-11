@@ -392,6 +392,10 @@ class PlayerRepository:
             
             db.commit()
 
+            from app.crud.movecard_crud import MoveCardRepository
+            move_card_repo = MoveCardRepository()
+            move_card_repo.confirm_moves(match.current_turn)
+
             return player_turn.player_id, color
         finally:
             db.close()
