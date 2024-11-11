@@ -271,15 +271,26 @@ class MatchRepository:
                 raise HTTPException(status_code=409, detail="Match has not started.")
             
             player_turn = match.current_turn
-            # Assign shape cards to next player
-            shape_card_repo = ShapeCardRepository()
-            shape_card_amount = shape_card_repo.get_amount_of_shape_cards_by_player(player_turn)
+            player = db.query(PlayerModel).get(player_turn)
+            if not player:
+                raise HTTPException(status_code=404, detail="Player not found.")
             
+            has_block_card = False
+            for card in player.shape_cards:
+                if card.is_blocked:
+                    has_block_card = True
+                    break
             
-            for _ in range(3 - shape_card_amount):
-                inactive_shapes = shape_card_repo.get_shape_cards_ids_inactive(player_turn)
-                if len(inactive_shapes) > 0:
-                    shape_card_repo.set_active_shape_card(random.choice(inactive_shapes))
+            if not has_block_card:
+                # Assign shape cards to next player
+                shape_card_repo = ShapeCardRepository()
+                shape_card_amount = shape_card_repo.get_amount_of_shape_cards_by_player(player_turn)
+                
+                
+                for _ in range(3 - shape_card_amount):
+                    inactive_shapes = shape_card_repo.get_shape_cards_ids_inactive(player_turn)
+                    if len(inactive_shapes) > 0:
+                        shape_card_repo.set_active_shape_card(random.choice(inactive_shapes))
 
             # ERROR AQUI (? what)
             current_player = next(player for player in match.players if player.player_id == player_turn)

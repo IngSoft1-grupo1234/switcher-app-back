@@ -114,4 +114,22 @@ async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
 async def send_message(player_id: int, message_info: ChatIn):
     repo = PlayerRepository()
     repo.player_send_message(player_id=player_id, content=message_info.content)
-    # player_cruds hace el broadcast_to_id_list
+    # player_cruds hace el broadcast_to_id_list    
+@router.put("/players/block_shape_card/{shape_card_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def block_shape_card(shape_card_id: int):
+    repo_player = PlayerRepository()
+    repo_shape_card = ShapeCardRepository()
+    shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
+    player_block = repo_player.get_player(player_id=shape_card.player_id)
+    player_id = repo_player.block_shape_card(shape_card_id=shape_card_id)
+    player_turn = repo_player.get_player(player_id=player_id)
+
+    message = {"action": "shape-card-block","data": {   "shape_card_id": shape_card.shape_card_id, 
+                                                        "shape_card_type": shape_card.shape_card_type.value, 
+                                                        "player_turn_id": player_turn.player_id, 
+                                                        "player_turn_name": player_turn.username, 
+                                                        "player_block_id": player_block.player_id, 
+                                                        "player_block_name": player_block.username
+                                                    }}
+    print(f"SHAPE CARD BLOCK MESSAGE: {message}")
+    await player_manager.broadcast(json.dumps(message))

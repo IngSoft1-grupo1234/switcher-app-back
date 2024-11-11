@@ -131,13 +131,22 @@ def test_pass_turn(match_repo, mock_session, player_mock_session):
     # esto es, creo, un conflict merge. Es abominable 
     mock_db = mock_session.return_value
     mock_match = MatchModel(match_id=1, match_name="Match1", max_players=4, host="1", player_count=2, current_turn=1, has_begun=True, players=[
-        PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([])),
-        PlayerModel(player_id=2, username="Player2", match_id = 1, used_cards = json.dumps([]))
+        PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]), shape_cards = []),
+        PlayerModel(player_id=2, username="Player2", match_id = 1, used_cards = json.dumps([]), shape_cards = [])
     ],  turns=json.dumps([1, 2]), board = json.dumps(pass_turn_return_board), prohibited_color="")
+
+    mock_player = PlayerModel(player_id=1, username="Player1", match_id = 1, used_cards = json.dumps([]), shape_cards = [])
     mock_db.query.return_value.get.return_value = mock_match
     mock_db.get.return_value = mock_match
 
+    def mock_get(model, id):
+        if model == PlayerModel and id == 1:
+            return mock_player
+        elif model == MatchModel and id == 1:
+            return mock_match
+        return None
     
+    mock_db.query.side_effect = lambda model: MagicMock(get=lambda id: mock_get(model, id))
 
     with patch('app.crud.shapecard_crud.session', autospec=True) as shapecard_mock_session:
         shapecard_mock_db = shapecard_mock_session.return_value
