@@ -8,6 +8,7 @@ class Match(Base):
 
     match_id = Column(Integer, primary_key=True, autoincrement=True)
     password = Column(String, nullable=False, default="")
+    isPrivate = Column(Boolean, nullable=False, default=False)
     match_name = Column(String, nullable=False)
     max_players = Column(Integer, nullable=False)
     host = Column(Integer, nullable=False)

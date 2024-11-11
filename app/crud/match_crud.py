@@ -31,6 +31,8 @@ class MatchRepository:
 
         try:
             db = session()
+            if db_match.password != "":
+                db_match.isPrivate = True
             db.add(db_match)
             db.commit()
             db.refresh(db_match) # Consigue el ID que le dio la base de datos
@@ -93,7 +95,8 @@ class MatchRepository:
                 for player in match.players
             ],
             "turns": match.turns,
-            "board": match.board
+            "board": match.board,
+            "isPrivate": match.isPrivate
         }
 
     def delete_match(self, match_id): # nunca usar esto, muerte instantanea
