@@ -252,7 +252,10 @@ class PlayerRepository:
 
             from app.crud.movecard_crud import MoveCardRepository
             move_card_repo = MoveCardRepository()
-            move_card_repo.confirm_moves(match.current_turn)
+            turn = match.current_turn
+            db.commit()
+
+            move_card_repo.confirm_moves(turn)
             amount = move_card_repo.get_amount_of_move_cards_by_player(player.player_id)
             for _ in range(3 - amount):
                 inactive_moves = move_card_repo.get_move_cards_id_inactive_in_match(match_id)
@@ -261,7 +264,6 @@ class PlayerRepository:
                 move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player.player_id)
 
 
-            db.commit()
             # CHAT MESSAGE
             if log:
                 player_ids = [player.player_id for player in match.players]
