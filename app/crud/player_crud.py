@@ -390,7 +390,7 @@ class PlayerRepository:
             
             db.commit()
 
-            return player_turn.player_id
+            return player_turn.player_id, color
         finally:
             db.close()
 

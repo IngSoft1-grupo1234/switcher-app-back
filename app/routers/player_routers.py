@@ -124,7 +124,7 @@ async def block_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
     repo_shape_card = ShapeCardRepository()
     shape_card = repo_shape_card.get_shape_card(shape_card_id=shape_card_id)
     player_block = repo_player.get_player(player_id=shape_card.player_id)
-    player_id = repo_player.block_shape_card(shape_card_id=shape_card_id, color=usedshape.color)
+    player_id, prohibited_color = repo_player.block_shape_card(shape_card_id=shape_card_id, color=usedshape.color)
     player_turn = repo_player.get_player(player_id=player_id)
 
     message = {"action": "shape-card-block","data": {   "shape_card_id": shape_card.shape_card_id, 
@@ -132,7 +132,8 @@ async def block_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
                                                         "player_turn_id": player_turn.player_id, 
                                                         "player_turn_name": player_turn.username, 
                                                         "player_block_id": player_block.player_id, 
-                                                        "player_block_name": player_block.username
+                                                        "player_block_name": player_block.username,
+                                                        "prohibited_color": prohibited_color
                                                     }}
     print(f"SHAPE CARD BLOCK MESSAGE: {message}")
     await player_manager.broadcast(json.dumps(message))
