@@ -250,6 +250,17 @@ class PlayerRepository:
                 print(f"SHAPE CARD UNBLOCKED MESSAGE: {message}")
                 asyncio.create_task(player_manager.broadcast(json.dumps(message)))
 
+            from app.crud.movecard_crud import MoveCardRepository
+            move_card_repo = MoveCardRepository()
+            move_card_repo.confirm_moves(match.current_turn)
+            amount = move_card_repo.get_amount_of_move_cards_by_player(player.player_id)
+            for _ in range(3 - amount):
+                inactive_moves = move_card_repo.get_move_cards_id_inactive_in_match(match_id)
+                if not inactive_moves:
+                    raise HTTPException(status_code=400, detail="Match has no more move cards.")
+                move_card_repo.assign_move_card_to_player(random.choice(inactive_moves), player.player_id)
+
+
             db.commit()
             # CHAT MESSAGE
             if log:
