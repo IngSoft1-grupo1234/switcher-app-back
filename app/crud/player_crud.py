@@ -319,13 +319,6 @@ class PlayerRepository:
                 
                 db.delete(match)
                 db.commit()
-
-                # CHAT MESSAGE
-                if log:
-                    asyncio.create_task(self.broadcast_message_to_id_list(content=f"{winner_username} has won the game.",
-                                                                      message_type=messageType.PlayerWins,  
-                                                                      match_id=player.match_id, 
-                                                                      ids=player_ids))
                 
                 return {"winner_username": winner_username, "winner_player_id": winner_player_id}
         finally:
