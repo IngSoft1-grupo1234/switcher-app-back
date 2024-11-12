@@ -95,7 +95,7 @@ async def use_shape_card(shape_card_id: int, usedshape: UsedShapeSchema):
                                                     "prohibited_color": prohibited_color,
                                                     "player_id": player_id}}
     print(f"SHAPE CARD USED MESSAGE: {message}")
-    await player_manager.broadcast_to_id_list(json.dumps(message), match.turns)
+    await player_manager.broadcast(json.dumps(message))
     
     
     
